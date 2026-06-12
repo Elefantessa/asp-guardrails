@@ -1,0 +1,57 @@
+# ============================================================
+# Cloudway — Neuro-Symbolic Policy Compliance
+# Base: LLM_Guardrails_Master_Thesis_Guide v4.0
+# Note: langchain 0.2.x conflicts with langchain-aws 0.2.x
+# (both need incompatible langchain-core ranges). Upgraded
+# langchain + langchain-community to 0.3.x to resolve.
+# ============================================================
+
+# ── Orchestration ──────────────────────────────────────────
+langgraph==0.2.50
+langgraph-checkpoint-postgres==2.0.7
+
+# ── LLM & RAG (LangChain as integration glue only) ─────────
+# langchain-aws 0.2.6 requires langchain-core>=0.3.15 → need langchain 0.3.x
+langchain>=0.3.0,<0.4.0
+langchain-aws==0.2.6
+langchain-community>=0.3.0,<0.4.0
+
+# ── Vector Store ───────────────────────────────────────────
+chromadb==0.5.15
+
+# ── ASP Solver ─────────────────────────────────────────────
+clingo==5.8.0
+
+# ── AWS ────────────────────────────────────────────────────
+boto3==1.35.0
+
+# ── Document Parsing (Phase 2 RAG ingestion) ───────────────
+PyMuPDF==1.24.9
+
+# ── API & Web UI ───────────────────────────────────────────
+fastapi==0.115.0
+uvicorn==0.30.0
+streamlit==1.38.0
+
+# ── Persistence ────────────────────────────────────────────
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+
+# ── Utilities ──────────────────────────────────────────────
+python-dotenv==1.0.1
+pydantic==2.9.0
+
+# ── Testing ────────────────────────────────────────────────
+pytest==8.3.0
+pytest-asyncio==0.24.0
+
+# ── Telemetry (doc 06) ─────────────────────────────────────
+# Export to Grafana LGTM via OTLP (gRPC port 4317, HTTP port 4318)
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-exporter-otlp==1.27.0
+opentelemetry-instrumentation==0.48b0
+
+# ── Development ────────────────────────────────────────────
+black==24.8.0
+ruff==0.6.0
