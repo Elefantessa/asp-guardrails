@@ -1,12 +1,13 @@
 """
-Phase 3 — Conversational RAG Agent (Agent 1)
+Phase 3 — Conversational RAG Agent (Agent 2)
 
 The user-facing LLM agent. Responsibilities:
-  1. Retrieve the most relevant policy chunks from ChromaDB
-  2. Generate a grounded response using full conversation history
-  3. Ask for missing information (slot detection) when needed
-  4. Mark final answers with CLAIM: lines
-  5. Mark out-of-scope refusals with REFUSAL: line
+  1. Read the rewritten query from state (produced by the Query Rewriter)
+  2. Retrieve the most relevant policy chunks from ChromaDB
+  3. Generate a grounded response using full conversation history
+  4. Ask for missing information (slot detection) when needed
+  5. Mark final answers with CLAIM: lines
+  6. Mark out-of-scope refusals with REFUSAL: line
 
 Temperature is fixed at 0 — deterministic output is required for the
 downstream classifier to rely on CLAIM:/REFUSAL: markers reliably.
@@ -154,44 +155,6 @@ def _get_retriever():
     return _retriever
 
 
-# ── Query augmentation ────────────────────────────────────────────────────────
-
-def _augment_query(query: str) -> str:
-    """
-    Return a focused policy-vocabulary retrieval query that bridges the gap
-    between natural-language queries and the vocabulary in the policy PDF.
-
-    When specific patterns are detected the full user query is replaced with
-    a clean concept query so noisy details (booking IDs, specific numbers)
-    do not drown out the semantic signal.  No LLM call — zero latency.
-    """
-    q = query.lower()
-
-    # Age / lead-name eligibility (e.g. "Can John (age 35) make a booking?")
-    # Replace full query — specific IDs like "holiday ID B001" add retrieval noise.
-    if any(p in q for p in ["make a booking", "can i book", "lead booker"]) and "age " in q:
-        return "lead name must be adult age requirement booking eligibility"
-
-    # Minor travelling with adult companion
-    if any(p in q for p in ["accompanied", "with parent", "with adult"]) and \
-       any(p in q for p in ["age ", "under 18", "minor", "child"]):
-        return "minor under 18 accompanied adult companion travel"
-
-    # Amendment / accommodation changes (e.g. "change my accommodation 20 days before")
-    # Routes to the amendment fee table chunk, not the "company changes" chunks.
-    if any(p in q for p in ["change my accommodation", "change accommodation",
-                              "change my hotel", "change my room"]):
-        return "amendment fee accommodation change treated as cancellation 29 days before"
-
-    # Payment / deposit deadlines (e.g. "full amount … 100 days away")
-    # Payment rule chunk is PDF-encoded; this maximises recall from related chunks.
-    if any(p in q for p in ["full amount", "full payment", "do i need to pay",
-                              "pay now", "pay the full"]):
-        return "deposit full payment 84 days when to pay balance booking"
-
-    return query
-
-
 # ── Node ──────────────────────────────────────────────────────────────────────
 
 @node("rag_agent")
@@ -205,16 +168,12 @@ def rag_agent_node(state: GuardrailsState) -> dict:
     llm = _get_llm()
     retriever = _get_retriever()
 
-    # Build search query: combine original question with latest reply
-    # so follow-up turns ("65 days") find the right policy chunks.
+    # Use the policy-vocabulary query produced by the Query Rewriter node.
+    # Falls back to the latest user message if rewritten_query is not set
+    # (e.g. direct unit-test invocation without the full graph).
     user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
     latest = user_messages[-1].content if user_messages else ""
-    raw_query = (
-        f"{user_messages[0].content} {latest}"
-        if len(user_messages) > 1
-        else latest
-    )
-    search_query = _augment_query(raw_query)
+    search_query = state.get("rewritten_query") or latest
 
     # Retrieve top-5 policy chunks
     docs = retriever.invoke(search_query)

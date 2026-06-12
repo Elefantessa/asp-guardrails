@@ -16,6 +16,9 @@ class GuardrailsState(TypedDict):
     # ── Conversation (RAG Agent) ──────────────────────────────────────
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
+    # ── Query Rewriter outputs ────────────────────────────────────────
+    rewritten_query: str        # Policy-vocabulary retrieval query (rule-based or LLM)
+
     # ── RAG Agent outputs ─────────────────────────────────────────────
     retrieved_docs: list[str]   # Top-K policy chunks retrieved this turn
     llm_answer: str             # Raw text response from the LLM

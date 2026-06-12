@@ -5,19 +5,19 @@ Builds the multi-agent guardrails graph:
 
     START
       │
-    RAG Agent ──→ Classifier
-                      │
-              ┌───────┴───────┐
-         clarif/refusal/err   final answer
-              │               │
-              │          Fact Extractor
-              │               │
-              │          ASP Validator
-              │               │
-              └───────┬───────┘
-                   Decision
-                      │
-                     END
+    Query Rewriter ──→ RAG Agent ──→ Classifier
+                                         │
+                                 ┌───────┴───────┐
+                            clarif/refusal/err   final answer
+                                 │               │
+                                 │          Fact Extractor
+                                 │               │
+                                 │          ASP Validator
+                                 │               │
+                                 └───────┬───────┘
+                                      Decision
+                                         │
+                                        END
 
 PostgresSaver is used when USE_POSTGRES_CHECKPOINTER=true in .env.
 Otherwise, MemorySaver is used (development default).
@@ -33,6 +33,7 @@ from src.agents.asp_validator import asp_validator_node
 from src.agents.classifier import classifier_node
 from src.agents.decision import decision_node
 from src.agents.fact_extractor import fact_extraction_agent_node
+from src.agents.query_rewriter import query_rewriter_node
 from src.agents.rag_agent import rag_agent_node
 from src.state import GuardrailsState
 
@@ -67,6 +68,7 @@ def build_graph(checkpointer=None):
     workflow = StateGraph(GuardrailsState)
 
     # Register nodes
+    workflow.add_node("query_rewriter", query_rewriter_node)
     workflow.add_node("rag_agent", rag_agent_node)
     workflow.add_node("classifier", classifier_node)
     workflow.add_node("fact_extractor", fact_extraction_agent_node)
@@ -74,7 +76,8 @@ def build_graph(checkpointer=None):
     workflow.add_node("router", decision_node)
 
     # Wire edges
-    workflow.add_edge(START, "rag_agent")
+    workflow.add_edge(START, "query_rewriter")
+    workflow.add_edge("query_rewriter", "rag_agent")
     workflow.add_edge("rag_agent", "classifier")
     workflow.add_conditional_edges(
         "classifier",
