@@ -1,0 +1,415 @@
+{
+  "version": "2.0",
+  "description": "Cloudway evaluation suite — 25 cases covering all decision paths and ASP boundaries.",
+  "evaluation_types": {
+    "real_pipeline": "Full RAG→LLM→ASP pipeline run. Input is natural language. Measures end-to-end behaviour.",
+    "asp_direct":    "Mock facts injected directly into the ASP validator. Guarantees hallucination is present. Used for escalated cases where we cannot force the LLM to hallucinate."
+  },
+
+  "test_cases": [
+
+    {
+      "id": "TC001",
+      "category": "identity_validation",
+      "evaluation_type": "real_pipeline",
+      "description": "Valid adult lead booker — full info provided",
+      "input": {
+        "query": "Can John (age 35) make a booking for holiday ID B001 departing in 107 days?",
+        "turns": ["Can John (age 35) make a booking for holiday ID B001 departing in 107 days?"]
+      },
+      "expected_decision": "approved",
+      "notes": "All required info in query. LLM approves; ASP confirms lead_name_valid."
+    },
+
+    {
+      "id": "TC002",
+      "category": "identity_validation",
+      "evaluation_type": "real_pipeline",
+      "description": "Minor (age 16) as lead booker — policy violation",
+      "input": {
+        "query": "Can Sarah (age 16) make a booking?",
+        "turns": ["Can Sarah (age 16) make a booking?"]
+      },
+      "expected_decision": "approved",
+      "notes": "LLM correctly says no. ASP confirms lead_name_invalid. Decision is still approved because LLM answer is consistent with policy."
+    },
+
+    {
+      "id": "TC003",
+      "category": "identity_validation",
+      "evaluation_type": "real_pipeline",
+      "description": "Minor (age 15) with adult companion — allowed",
+      "input": {
+        "query": "Can Emma (age 15) travel if accompanied by her parent Mark (age 42)?",
+        "turns": ["Can Emma (age 15) travel if accompanied by her parent Mark (age 42)?"]
+      },
+      "expected_decision": "approved",
+      "notes": "has_adult_companion satisfies the minor accompaniment rule."
+    },
+
+    {
+      "id": "TC004",
+      "category": "cancellation_fees",
+      "evaluation_type": "real_pipeline",
+      "description": "Correct cancellation fee — 65 days before departure (30%)",
+      "input": {
+        "query": "What is the cancellation fee for booking B003 if I cancel 65 days before departure?",
+        "turns": ["What is the cancellation fee for booking B003 if I cancel 65 days before departure?"]
+      },
+      "expected_decision": "approved",
+      "notes": "65 days falls in 63-69 bracket → 30%. LLM should claim 30%; ASP verifies."
+    },
+
+    {
+      "id": "TC005",
+      "category": "cancellation_fees",
+      "evaluation_type": "asp_direct",
+      "description": "Hallucination — wrong fee (50% instead of 30%) at 65 days",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 65).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 50)."
+        ]
+      },
+      "expected_validation_passed": false,
+      "expected_decision": "escalated",
+      "expected_violation_prefix": "cancellation_claim_incorrect",
+      "notes": "LLM claims 50% but policy says 30% for 63-69 days. ASP must catch this."
+    },
+
+    {
+      "id": "TC006",
+      "category": "amendment_fees",
+      "evaluation_type": "real_pipeline",
+      "description": "Name change fee query",
+      "input": {
+        "query": "How much does it cost to change a name on my booking?",
+        "turns": ["How much does it cost to change a name on my booking?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Policy: name change = £25 (2500 pence). LLM should state £25."
+    },
+
+    {
+      "id": "TC007",
+      "category": "amendment_restrictions",
+      "evaluation_type": "real_pipeline",
+      "description": "Accommodation change within 29 days — treated as cancellation",
+      "input": {
+        "query": "Can I change my accommodation 20 days before departure?",
+        "turns": ["Can I change my accommodation 20 days before departure?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Major change <29 days → treated as cancellation. LLM should say no."
+    },
+
+    {
+      "id": "TC008",
+      "category": "payment_requirements",
+      "evaluation_type": "real_pipeline",
+      "description": "Deposit only required when >84 days until departure",
+      "input": {
+        "query": "Do I need to pay the full amount now if my holiday is 100 days away?",
+        "turns": ["Do I need to pay the full amount now if my holiday is 100 days away?"]
+      },
+      "expected_decision": "approved",
+      "notes": ">84 days → deposit only. LLM should say only deposit required."
+    },
+
+    {
+      "id": "TC009",
+      "category": "complaint_time_limits",
+      "evaluation_type": "real_pipeline",
+      "description": "Complaint filed 35 days after return — too late",
+      "input": {
+        "query": "Can I file a complaint 35 days after returning from my holiday?",
+        "turns": ["Can I file a complaint 35 days after returning from my holiday?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Policy: complaints must be filed within 28 days. 35 > 28 → invalid."
+    },
+
+    {
+      "id": "TC010",
+      "category": "missing_information",
+      "evaluation_type": "real_pipeline",
+      "description": "Cancellation fee query — days not provided",
+      "input": {
+        "query": "What is the cancellation fee for my booking?",
+        "turns": ["What is the cancellation fee for my booking?"]
+      },
+      "expected_decision": "pending_info",
+      "notes": "Missing days_until_holiday. LLM must ask before answering."
+    },
+
+    {
+      "id": "TC011",
+      "category": "cancellation_fees_boundary",
+      "evaluation_type": "asp_direct",
+      "description": "Boundary: 70 days → 0% (deposit only) — correct claim",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 70).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 0)."
+        ]
+      },
+      "expected_validation_passed": true,
+      "expected_decision": "approved",
+      "notes": "Exact lower boundary of ≥70 days bracket (0%)."
+    },
+
+    {
+      "id": "TC012",
+      "category": "cancellation_fees_boundary",
+      "evaluation_type": "asp_direct",
+      "description": "Boundary: 69 days → 30% — correct claim",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 69).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 30)."
+        ]
+      },
+      "expected_validation_passed": true,
+      "expected_decision": "approved",
+      "notes": "Upper boundary of 63-69 bracket. One day below free zone."
+    },
+
+    {
+      "id": "TC013",
+      "category": "cancellation_fees_boundary",
+      "evaluation_type": "asp_direct",
+      "description": "Boundary: 14 days → 100% — correct claim",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 14).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 100)."
+        ]
+      },
+      "expected_validation_passed": true,
+      "expected_decision": "approved",
+      "notes": "Upper boundary of 0-14 days bracket (100%)."
+    },
+
+    {
+      "id": "TC014",
+      "category": "cancellation_fees_boundary",
+      "evaluation_type": "asp_direct",
+      "description": "Boundary hallucination: 14 days — LLM claims 90% instead of 100%",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 14).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 90)."
+        ]
+      },
+      "expected_validation_passed": false,
+      "expected_decision": "escalated",
+      "expected_violation_prefix": "cancellation_claim_incorrect",
+      "notes": "14 days = 100% not 90%. Off-by-one-bracket error."
+    },
+
+    {
+      "id": "TC015",
+      "category": "cancellation_fees_boundary",
+      "evaluation_type": "asp_direct",
+      "description": "Boundary: 29 days → 70% — correct claim",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 29).",
+          "llm_claims_cancellation_fee(\"c1\", \"b1\", 70)."
+        ]
+      },
+      "expected_validation_passed": true,
+      "expected_decision": "approved",
+      "notes": "Lower boundary of 29-48 days bracket."
+    },
+
+    {
+      "id": "TC016",
+      "category": "cancellation_fees",
+      "evaluation_type": "real_pipeline",
+      "description": "Cancellation fee — 45 days before departure (70%)",
+      "input": {
+        "query": "What is the cancellation fee if I cancel 45 days before my departure date?",
+        "turns": ["What is the cancellation fee if I cancel 45 days before my departure date?"]
+      },
+      "expected_decision": "approved",
+      "notes": "45 days falls in 29-48 bracket → 70%."
+    },
+
+    {
+      "id": "TC017",
+      "category": "out_of_scope",
+      "evaluation_type": "real_pipeline",
+      "description": "Weather question — completely out of scope",
+      "input": {
+        "query": "What is the weather like in Mallorca in July?",
+        "turns": ["What is the weather like in Mallorca in July?"]
+      },
+      "expected_decision": "refused_out_of_scope",
+      "notes": "Weather not covered by holiday policy."
+    },
+
+    {
+      "id": "TC018",
+      "category": "out_of_scope",
+      "evaluation_type": "real_pipeline",
+      "description": "Restaurant recommendation — out of scope",
+      "input": {
+        "query": "Can you recommend a good restaurant near my hotel in Spain?",
+        "turns": ["Can you recommend a good restaurant near my hotel in Spain?"]
+      },
+      "expected_decision": "refused_out_of_scope",
+      "notes": "Restaurant recommendations not in policy."
+    },
+
+    {
+      "id": "TC019",
+      "category": "out_of_scope",
+      "evaluation_type": "real_pipeline",
+      "description": "Visa requirements — out of scope",
+      "input": {
+        "query": "Do I need a visa to travel to Turkey?",
+        "turns": ["Do I need a visa to travel to Turkey?"]
+      },
+      "expected_decision": "refused_out_of_scope",
+      "notes": "Visa requirements not covered by booking T&Cs."
+    },
+
+    {
+      "id": "TC020",
+      "category": "out_of_scope",
+      "evaluation_type": "real_pipeline",
+      "description": "Competitor comparison — out of scope",
+      "input": {
+        "query": "Is TUI cheaper than EasyJet holidays?",
+        "turns": ["Is TUI cheaper than EasyJet holidays?"]
+      },
+      "expected_decision": "refused_out_of_scope",
+      "notes": "Competitor pricing not addressed in policy."
+    },
+
+    {
+      "id": "TC021",
+      "category": "missing_information",
+      "evaluation_type": "real_pipeline",
+      "description": "Amendment fee — amendment type not specified",
+      "input": {
+        "query": "What is the amendment fee for my booking?",
+        "turns": ["What is the amendment fee for my booking?"]
+      },
+      "expected_decision": "pending_info",
+      "notes": "Fee depends on amendment type (name change, duration, etc.). LLM must ask."
+    },
+
+    {
+      "id": "TC022",
+      "category": "missing_information",
+      "evaluation_type": "real_pipeline",
+      "description": "Multi-turn: clarification resolves to approval",
+      "input": {
+        "query": "What is the cancellation fee?",
+        "turns": [
+          "What is the cancellation fee?",
+          "I want to cancel 20 days before departure"
+        ]
+      },
+      "expected_decision": "approved",
+      "notes": "Turn 1 → pending_info (days missing). Turn 2 provides 20 days → 90% bracket → approved."
+    },
+
+    {
+      "id": "TC023",
+      "category": "financial_protection",
+      "evaluation_type": "real_pipeline",
+      "description": "ATOL protection for flight-inclusive package",
+      "input": {
+        "query": "Is my holiday financially protected if TUI goes bust?",
+        "turns": ["Is my holiday financially protected if TUI goes bust?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Policy covers ATOL/ABTA protection. Should be in policy PDF."
+    },
+
+    {
+      "id": "TC024",
+      "category": "amendment_fees",
+      "evaluation_type": "asp_direct",
+      "description": "Hallucination — wrong name change fee (LLM says £50 instead of £25)",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "days_until_holiday(\"b1\", 60).",
+          "llm_claims_fee(\"c1\", \"b1\", \"name_change\", 5000)."
+        ]
+      },
+      "expected_validation_passed": false,
+      "expected_decision": "escalated",
+      "expected_violation_prefix": "fee_claim_incorrect",
+      "notes": "Policy: name_change = 2500 pence (£25). LLM claims 5000 (£50) — hallucination caught."
+    },
+
+    {
+      "id": "TC025",
+      "category": "identity_validation",
+      "evaluation_type": "asp_direct",
+      "description": "Hallucination — LLM approves invalid booking (minor as lead booker)",
+      "input": {
+        "mock_facts": [
+          "customer(\"c1\").",
+          "booking(\"c1\", \"b1\").",
+          "age(\"c1\", 16).",
+          "days_until_holiday(\"b1\", 50).",
+          "llm_approves_booking(\"c1\", \"b1\")."
+        ]
+      },
+      "expected_validation_passed": false,
+      "expected_decision": "escalated",
+      "expected_violation_prefix": "answer_invalid",
+      "notes": "Age 16 < 18. LLM incorrectly approves booking. ASP must catch via answer_invalid."
+    }
+
+  ],
+
+  "metadata": {
+    "total_cases": 25,
+    "categories": {
+      "identity_validation": 3,
+      "cancellation_fees": 3,
+      "cancellation_fees_boundary": 5,
+      "amendment_fees": 2,
+      "amendment_restrictions": 1,
+      "payment_requirements": 1,
+      "complaint_time_limits": 1,
+      "missing_information": 3,
+      "out_of_scope": 4,
+      "financial_protection": 1,
+      "multi_turn": 1
+    },
+    "evaluation_type_breakdown": {
+      "real_pipeline": 17,
+      "asp_direct": 8
+    },
+    "expected_decisions": {
+      "approved": 13,
+      "pending_info": 3,
+      "refused_out_of_scope": 4,
+      "escalated": 5
+    },
+    "rq1_hallucination_cases": ["TC005", "TC014", "TC024", "TC025"],
+    "rq2_slot_detection_cases": ["TC010", "TC021", "TC022"],
+    "boundary_value_cases": ["TC011", "TC012", "TC013", "TC014", "TC015"]
+  }
+}
