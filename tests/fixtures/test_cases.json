@@ -379,12 +379,90 @@
       "expected_decision": "escalated",
       "expected_violation_prefix": "answer_invalid",
       "notes": "Age 16 < 18. LLM incorrectly approves booking. ASP must catch via answer_invalid."
+    },
+
+    {
+      "id": "TC026",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Novel cancellation synonym: 'backing out' not in rule patterns — LLM rewriter path",
+      "input": {
+        "query": "I'm backing out of my holiday. I'm due to depart in 35 days. What cancellation charge applies?",
+        "turns": ["I'm backing out of my holiday. I'm due to depart in 35 days. What cancellation charge applies?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Tests LLM rewriter fallback. 'backing out' must be normalised to 'cancel'. 35 days = 29-48 bracket = 70% fee. ASP validates llm_claims_cancellation_fee(c1,b1,70)."
+    },
+
+    {
+      "id": "TC027",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Accommodation change via 'swap hotel' phrasing — LLM rewriter path",
+      "input": {
+        "query": "Can I swap to a different hotel 14 days before departure? Will it cost me extra?",
+        "turns": ["Can I swap to a different hotel 14 days before departure? Will it cost me extra?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Tests LLM rewriter: 'swap hotel' → accommodation change vocabulary. 14 days < 29 days → change treated as cancellation. 14 days = 8-14 bracket = 100% cancellation fee."
+    },
+
+    {
+      "id": "TC028",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Minor travelling alone — 'without any adults' phrasing — LLM rewriter path",
+      "input": {
+        "query": "My 15-year-old son wants to travel without any adults on a TUI holiday. Is that allowed by your policy?",
+        "turns": ["My 15-year-old son wants to travel without any adults on a TUI holiday. Is that allowed by your policy?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Tests LLM rewriter: 'without any adults' → 'not accompanied by adult'. Policy: under 18 must be accompanied by adult. LLM should deny and ASP confirms via age predicate."
+    },
+
+    {
+      "id": "TC029",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Lead name eligibility with 'main person on booking' phrasing — LLM rewriter path",
+      "input": {
+        "query": "My daughter who is 17 years and 3 months old wants to be the main person on our family booking. Is she eligible?",
+        "turns": ["My daughter who is 17 years and 3 months old wants to be the main person on our family booking. Is she eligible?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Tests LLM rewriter: 'main person on booking' → 'lead name'; age 17 → under 18 → not eligible as lead name. Rewriter must preserve the age value and route to eligibility chunk."
+    },
+
+    {
+      "id": "TC030",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Payment deadline with deposit framing — holiday 90 days away",
+      "input": {
+        "query": "We've just booked a holiday that departs in 90 days. Can we just pay a deposit for now and the rest later?",
+        "turns": ["We've just booked a holiday that departs in 90 days. Can we just pay a deposit for now and the rest later?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Tests LLM rewriter: 'pay a deposit for now' → payment deadline vocabulary. 90 days > 84 days → deposit only required. Rewriter must route to payment deadline chunk."
+    },
+
+    {
+      "id": "TC031",
+      "category": "query_rewriter_vocabulary_gap",
+      "evaluation_type": "real_pipeline",
+      "description": "Complex multi-party cancellation with colloquial phrasing",
+      "input": {
+        "query": "Our whole family is cancelling the trip. The lead booker is 32 years old, and we have three kids aged 8, 11 and 14 coming with us. We cancel 20 days before we're due to fly. What percentage of the holiday cost will we lose?",
+        "turns": ["Our whole family is cancelling the trip. The lead booker is 32 years old, and we have three kids aged 8, 11 and 14 coming with us. We cancel 20 days before we're due to fly. What percentage of the holiday cost will we lose?"]
+      },
+      "expected_decision": "approved",
+      "notes": "Complex query: multiple ages, 'lose' as synonym for 'cancellation fee'. Lead booker age 32 = valid adult. Kids are minors accompanied by adult. 20 days = 15-28 bracket = 90%. Rewriter must extract key facts and route to cancellation fee table."
     }
 
   ],
 
   "metadata": {
-    "total_cases": 25,
+    "total_cases": 31,
     "categories": {
       "identity_validation": 3,
       "cancellation_fees": 3,
@@ -396,7 +474,8 @@
       "missing_information": 3,
       "out_of_scope": 4,
       "financial_protection": 1,
-      "multi_turn": 1
+      "multi_turn": 1,
+      "query_rewriter_vocabulary_gap": 6
     },
     "evaluation_type_breakdown": {
       "real_pipeline": 17,

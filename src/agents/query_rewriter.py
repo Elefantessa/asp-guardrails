@@ -72,7 +72,7 @@ def _get_llm():
         _llm = ChatBedrock(
             model_id=os.getenv(
                 "BEDROCK_REWRITER_LLM",
-                "eu.anthropic.claude-haiku-4-5-20251001",
+                "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
             ),
             region_name=os.getenv("AWS_DEFAULT_REGION", "eu-central-1"),
             credentials_profile_name=profile,
@@ -111,6 +111,12 @@ def _rule_based_rewrite(query: str) -> str | None:
     if any(p in q for p in ["full amount", "full payment", "do i need to pay",
                               "pay now", "pay the full"]):
         return "deposit full payment 84 days when to pay balance booking"
+
+    # Financial protection / insolvency (ATOL/ABTA) — keep exact vocabulary
+    # so the RAG agent retrieves the ATOL/ABTA chunk rather than refuting.
+    if any(p in q for p in ["financially protected", "goes bust", "goes bankrupt",
+                              "insolvency", "atol", "abta", "financial protection"]):
+        return "ATOL ABTA financial protection holiday booking insolvency"
 
     return None
 
