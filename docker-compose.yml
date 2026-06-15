@@ -1,4 +1,5 @@
 services:
+  # ── Infrastructure ────────────────────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
     environment:
@@ -22,5 +23,66 @@ services:
       - "4317:4317"
       - "4318:4318"
 
+  # ── Application services (all built from the same image) ──────────────────────
+  api:
+    build: .
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      CHROMA_PERSIST_DIR: /app/data/chroma
+      AUDIT_LOG_PATH: /app/logs/audit.jsonl
+      AWS_ACCESS_KEY_ID: ${aws_access_key_id}
+      AWS_SECRET_ACCESS_KEY: ${aws_secret_access_key}
+      AWS_SESSION_TOKEN: ${aws_session_token}
+      AWS_DEFAULT_REGION: ${aws_default_region:-eu-central-1}
+    volumes:
+      - chroma_data:/app/data/chroma
+      - log_data:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ui:
+    build: .
+    command: streamlit run src/ui/chat_app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file: .env
+    environment:
+      CHROMA_PERSIST_DIR: /app/data/chroma
+      AUDIT_LOG_PATH: /app/logs/audit.jsonl
+      AWS_ACCESS_KEY_ID: ${aws_access_key_id}
+      AWS_SECRET_ACCESS_KEY: ${aws_secret_access_key}
+      AWS_SESSION_TOKEN: ${aws_session_token}
+      AWS_DEFAULT_REGION: ${aws_default_region:-eu-central-1}
+    volumes:
+      - chroma_data:/app/data/chroma
+      - log_data:/app/logs
+    depends_on:
+      - api
+
+  review:
+    build: .
+    command: streamlit run src/ui/review_app.py --server.port 8502 --server.address 0.0.0.0
+    ports:
+      - "8502:8502"
+    env_file: .env
+    environment:
+      CHROMA_PERSIST_DIR: /app/data/chroma
+      AUDIT_LOG_PATH: /app/logs/audit.jsonl
+      AWS_ACCESS_KEY_ID: ${aws_access_key_id}
+      AWS_SECRET_ACCESS_KEY: ${aws_secret_access_key}
+      AWS_SESSION_TOKEN: ${aws_session_token}
+      AWS_DEFAULT_REGION: ${aws_default_region:-eu-central-1}
+    volumes:
+      - chroma_data:/app/data/chroma
+      - log_data:/app/logs
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
+  chroma_data:
+  log_data:

@@ -15,7 +15,7 @@ src/
 │   ├── asp_validator.py  — Clingo validator
 │   └── decision.py       — Final router
 ├── ingestion/
-│   └── policy_ingestor.py — PDF → ChromaDB
+│   └── policy_ingestor.py — Markdown → ChromaDB
 └── persistence/
     └── audit_log.py       — JSONL/PostgreSQL logging
 ```
@@ -108,17 +108,19 @@ with TRACER.start_as_current_span("graph.run") as span:
 
 ## `src/ingestion/policy_ingestor.py`
 
-### `ingest(pdf_path: str, persist_dir: str = None) → int`
+### `ingest(md_path: str, persist_dir: str = None, backend: str = None) → int`
 
-Full ingestion pipeline: PDF → chunks → embeddings → ChromaDB.
+Full ingestion pipeline: Markdown → chunks → embeddings → ChromaDB.
 
 ```python
 from src.ingestion.policy_ingestor import ingest
-n = ingest("data/raw/Terms and conditions.pdf")
+# Ingest policy from clean markdown file (source of truth)
+n = ingest("data/policy_text/Terms and conditions_raw.md", backend="bedrock")
+# → creates collection holiday_policy_bedrock in data/chroma/
 # Returns number of chunks stored
 ```
 
-**Environment variable:** `EMBEDDING_BACKEND=bedrock|huggingface` (default: `huggingface`)
+**Environment variable:** `EMBEDDING_BACKEND=bedrock|huggingface` (default: `bedrock`)
 
 ### `get_retriever(persist_dir: str = None, k: int = 5) → Retriever`
 
@@ -176,7 +178,7 @@ result = asp_validator_node({
 # result["violations"] = ['cancellation_claim_incorrect("c1","b1",50,"Incorrect cancellation fee")']
 ```
 
-**Policy file:** `policies/holiday_policy.lp` — 228 lines, 28 clauses
+**Policy file:** `policies/holiday_policy.lp` — 318 lines
 
 ---
 
@@ -199,6 +201,12 @@ Full list of predicates the fact extractor may produce:
 | `llm_rejects_booking` | 2 | `llm_rejects_booking("c1", "b1").` |
 | `llm_claims_cancellation_fee` | 3 | `llm_claims_cancellation_fee("c1", "b1", 30).` |
 | `llm_claims_fee` | 4 | `llm_claims_fee("c1", "b1", "name_change", 2500).` |
+| `llm_claims_atol_protected` | 2 | `llm_claims_atol_protected("c1", "b1").` |
+| `llm_claims_abta_protected` | 2 | `llm_claims_abta_protected("c1", "b1").` |
+| `llm_claims_amendment_blocked` | 3 | `llm_claims_amendment_blocked("c1", "b1", "reason").` |
 
 **Constraint:** All arguments must be ground (quoted strings or integers).
 Variable-style arguments (`CustID`, `BookID`) are rejected by the regex validator.
+
+Claims outside this vocabulary trigger the `partial_validation` flag → answer is
+automatically escalated for human review rather than approved.

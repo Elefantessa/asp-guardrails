@@ -42,12 +42,10 @@ import src.agents.rag_agent as _ra
 import src.agents.fact_extractor as _fe
 from src.agents.rag_agent import rag_agent_node
 
-# ── CRITICAL: clear stale env var credentials AFTER all imports ───────────────
-# Each agent module calls load_dotenv() at import time which re-sets expired
-# credentials from .env into os.environ, overriding ~/.aws/credentials.
-# Popping after all imports ensures boto3 uses the fresh profile credentials.
-for _k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"):
-    os.environ.pop(_k, None)
+# ── Normalize lowercase env var keys (dotenv may write aws_* in lowercase) ────
+for _k in list(os.environ.keys()):
+    if _k.startswith(("aws_", "bedrock_")):
+        os.environ.setdefault(_k.upper(), os.environ[_k])
 
 # Reset agent LLM singletons so next call creates a fresh boto3 client
 _ra._llm = None
@@ -61,10 +59,8 @@ def _check_aws_credentials() -> None:
     import boto3
     from botocore.exceptions import ClientError, NoCredentialsError
     try:
-        profile = os.getenv("AWS_PROFILE", "default")
-        session = boto3.Session(profile_name=profile)
-        session.client("sts", region_name=os.getenv("AWS_DEFAULT_REGION", "eu-central-1")) \
-              .get_caller_identity()
+        region = os.getenv("AWS_DEFAULT_REGION", "eu-central-1")
+        boto3.client("sts", region_name=region).get_caller_identity()
     except ClientError as e:
         code = e.response["Error"]["Code"]
         if code in ("ExpiredTokenException", "ExpiredToken"):
@@ -87,12 +83,10 @@ LOG_DIR.mkdir(exist_ok=True)
 # ── Shared LLM (fresh client each benchmark run) ─────────────────────────────
 
 def _get_llm():
-    """Always creates a fresh client so refreshed ~/.aws/credentials are used."""
-    profile = os.getenv("AWS_PROFILE", "default")
+    """Creates a fresh client using env var credentials."""
     return ChatBedrock(
         model_id=os.getenv("BEDROCK_LLM", "eu.anthropic.claude-sonnet-4-6"),
         region_name=os.getenv("AWS_DEFAULT_REGION", "eu-central-1"),
-        credentials_profile_name=profile,
         model_kwargs={"temperature": 0, "max_tokens": 1000},
     )
 

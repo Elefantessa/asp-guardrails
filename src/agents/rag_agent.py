@@ -1,30 +1,34 @@
 """
-Phase 3 — Conversational RAG Agent (Agent 2)
+Conversational RAG Agent
 
-The user-facing LLM agent. Responsibilities:
-  1. Read the rewritten query from state (produced by the Query Rewriter)
-  2. Retrieve the most relevant policy chunks from ChromaDB
-  3. Generate a grounded response using full conversation history
-  4. Ask for missing information (slot detection) when needed
-  5. Mark final answers with CLAIM: lines
-  6. Mark out-of-scope refusals with REFUSAL: line
+Responsibilities:
+  1. Read the rewritten query from state (produced by Query Rewriter)
+  2. Retrieve the most relevant policy chunks from ChromaDB using similarity scores
+  3. If retrieval quality is poor (score > threshold) AND query was rewritten,
+     retry with the original user query (similarity fallback)
+  4. Generate a grounded response using full conversation history
+  5. Mark final answers with CLAIM: lines and refusals with REFUSAL:
 
-Temperature is fixed at 0 — deterministic output is required for the
-downstream classifier to rely on CLAIM:/REFUSAL: markers reliably.
+Temperature is fixed at 0 — deterministic output required for downstream classifier.
 """
 
 import os
 
 from dotenv import load_dotenv
-from langchain_aws import BedrockEmbeddings, ChatBedrock
-from langchain_community.vectorstores import Chroma
+from langchain_aws import ChatBedrock
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from src.ingestion.policy_ingestor import get_vectorstore
 from src.state import GuardrailsState
 from src.telemetry import node, set_span_attrs
 from src.pipeline_logger import log_rag
 
 load_dotenv()
+
+# Similarity threshold: if the best chunk distance exceeds this, retrieval is
+# considered poor and a fallback to the original query is attempted.
+# ChromaDB returns L2 distance by default (lower = more similar).
+_SIMILARITY_THRESHOLD = float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.5"))
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
@@ -89,22 +93,64 @@ CRITICAL RULES:
    PART 1 — Write your complete, natural language answer in prose.
              Explain fully. Do not abbreviate.
 
-   PART 2 — After the prose, on separate lines, list each specific
-             factual claim using "CLAIM: " prefix. Example:
+   PART 2 — After the prose, output CLAIM: lines as ASP ground facts.
+             Each CLAIM: line must be a valid ASP atom in EXACTLY this format.
+             Use "c1" for customer ID and "b1" for booking ID unless specified.
 
-       The cancellation fee depends on how far in advance you cancel.
-       For 65 days before departure, the fee is 30%.
+   ALWAYS start PART 2 with:
+     CLAIM: booking("c1", "b1")
 
-       CLAIM: The cancellation fee is 30% for cancellations 63-69 days before departure.
-       CLAIM: 65 days falls within the 63-69 day bracket.
+   THEN choose facts based on the QUESTION TYPE:
 
-   NEVER mix CLAIM: lines into the middle of your prose.
-   NEVER include both CLAIM: and REFUSAL: in the same response.
-   CLAIM: is for factual policy data (fees, dates, rules, ages).
-   Do NOT add CLAIM: for general descriptions or lists of names.
+   ── TYPE A: BOOKING ELIGIBILITY (can this person book / travel?) ──
+   Use these ONLY when the question is about whether a booking CAN be made
+   (age eligibility, lead name validity, minor accompaniment):
+     CLAIM: llm_approves_booking("c1", "b1")   ← you say the booking IS allowed
+     CLAIM: llm_rejects_booking("c1", "b1")    ← you say the booking is NOT allowed
+     CLAIM: age("c1", 35)                      ← integer age of the lead name
+     CLAIM: has_adult_companion("c1")          ← only if an adult companion is mentioned
+
+   ── TYPE B: CANCELLATION FEES ──
+   Use these ONLY for cancellation fee questions. Do NOT add booking decision:
+     CLAIM: days_until_holiday("b1", 65)
+     CLAIM: llm_claims_cancellation_fee("c1", "b1", 30)   ← integer percent
+
+   ── TYPE C: AMENDMENT FEES ──
+   Use these ONLY for amendment fee / change fee questions. Do NOT add booking decision:
+     CLAIM: days_until_holiday("b1", 20)
+     CLAIM: llm_claims_fee("c1", "b1", "name_change", 2500)  ← pence (£25=2500, £50=5000)
+     CLAIM: llm_claims_amendment_blocked("c1", "b1", "change_accommodation")
+       ← ONLY when you explicitly say this change is TREATED AS A CANCELLATION
+
+   ── TYPE D: PAYMENT REQUIREMENTS ──
+   Use ONLY for payment / deposit questions:
+     CLAIM: days_until_holiday("b1", 100)
+     CLAIM: llm_approves_booking("c1", "b1")   ← you confirm deposit-only is sufficient
+     CLAIM: paid_full("c1", "b1")              ← only if explicitly stated
+
+   ── TYPE E: COMPLAINT / INJURY TIME LIMITS ──
+   Use ONLY for complaint or injury claim timing questions. Do NOT add booking decision:
+     CLAIM: complaint_filed_days("c1", "b1", 35)
+     CLAIM: injury_claim_filed_days("c1", "b1", 95)
+
+   ── TYPE F: FINANCIAL PROTECTION (ATOL/ABTA) ──
+   Use ONLY when the booking is CONFIRMED to include (or not include) a flight:
+     CLAIM: includes_flight("b1")              ← REQUIRED before using the next two
+     CLAIM: llm_claims_atol_protected("c1", "b1")   ← only alongside includes_flight
+     CLAIM: llm_claims_abta_protected("c1", "b1")   ← only when NO flight confirmed
+   If the flight status is UNKNOWN, do NOT include any of the above three.
+
+   FeeType options: "name_change", "upgrade_service", "change_duration", "change_accommodation"
+
+   STRICT RULES:
+   - NEVER write CLAIM: lines as natural language sentences
+   - NEVER mix CLAIM: lines into prose — all go at the end
+   - NEVER include CLAIM: without first writing booking("c1","b1")
+   - NEVER include both CLAIM: and REFUSAL: in the same response
+   - Do NOT include a CLAIM: for facts not mentioned in the query
 
    Summary of valid response shapes:
-   - Factual answer → prose + one or more CLAIM: lines
+   - Factual answer → prose + CLAIM: ground facts
    - Out-of-scope or no verifiable facts → REFUSAL: out_of_scope (no CLAIM:)
    - Need more information → clarifying question (no CLAIM:, no REFUSAL:)
 
@@ -114,45 +160,35 @@ POLICY CONTEXT:
 # ── Singleton resources ────────────────────────────────────────────────────────
 
 _llm = None
-_retriever = None
+_vectorstore = None
 
 
 def _get_llm():
     global _llm
     if _llm is None:
-        profile = os.getenv("AWS_PROFILE", "default")
+        # ISS-003: No credentials_profile_name — use env vars (AWS_ACCESS_KEY_ID etc.)
         _llm = ChatBedrock(
-            model_id=os.getenv("BEDROCK_LLM",
-                               "eu.anthropic.claude-sonnet-4-6"),
+            model_id=os.getenv("BEDROCK_LLM", "eu.anthropic.claude-sonnet-4-6"),
             region_name=os.getenv("AWS_DEFAULT_REGION", "eu-central-1"),
-            credentials_profile_name=profile,
-            model_kwargs={
-                "temperature": 0,
-                "max_tokens": 2000,
-            },
+            model_kwargs={"temperature": 0, "max_tokens": 2000},
         )
     return _llm
 
 
-def _get_retriever():
-    global _retriever
-    if _retriever is None:
-        persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./data/chroma")
-        chroma_path = f"{persist_dir}/holiday_policy"
-        profile = os.getenv("AWS_PROFILE", "default")
-        embeddings = BedrockEmbeddings(
-            model_id=os.getenv("BEDROCK_EMBEDDINGS",
-                               "amazon.titan-embed-text-v2:0"),
-            region_name=os.getenv("AWS_DEFAULT_REGION", "eu-central-1"),
-            credentials_profile_name=profile,
-        )
-        vectorstore = Chroma(
-            collection_name="holiday_policy",
-            embedding_function=embeddings,
-            persist_directory=chroma_path,
-        )
-        _retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-    return _retriever
+def _get_vectorstore():
+    global _vectorstore
+    if _vectorstore is None:
+        _vectorstore = get_vectorstore()
+    return _vectorstore
+
+
+def _retrieve_with_scores(query: str, k: int = 5):
+    """Return (docs, scores) from ChromaDB. Scores are distances (lower = better)."""
+    vs = _get_vectorstore()
+    results = vs.similarity_search_with_score(query, k=k)
+    docs   = [doc for doc, _ in results]
+    scores = [float(score) for _, score in results]
+    return docs, scores
 
 
 # ── Node ──────────────────────────────────────────────────────────────────────
@@ -162,38 +198,60 @@ def rag_agent_node(state: GuardrailsState) -> dict:
     """
     Conversational RAG Agent.
 
-    Reads:  state["messages"]  (full conversation history via add_messages)
-    Writes: messages, llm_answer, retrieved_docs
+    Reads:  state["messages"], state["rewritten_query"]
+    Writes: messages, llm_answer, retrieved_docs, retrieval_scores, retrieval_fallback_used
     """
     llm = _get_llm()
-    retriever = _get_retriever()
 
-    # Use the policy-vocabulary query produced by the Query Rewriter node.
-    # Falls back to the latest user message if rewritten_query is not set
-    # (e.g. direct unit-test invocation without the full graph).
     user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
-    latest = user_messages[-1].content if user_messages else ""
-    search_query = state.get("rewritten_query") or latest
+    original_query = user_messages[-1].content if user_messages else ""
+    search_query   = state.get("rewritten_query") or original_query
 
-    # Retrieve top-5 policy chunks
-    docs = retriever.invoke(search_query)
+    # ── Primary retrieval ──────────────────────────────────────────────────────
+    docs, scores = _retrieve_with_scores(search_query)
+    min_score = min(scores) if scores else 1.0
+    fallback_used = False
+
+    # ── Similarity fallback ────────────────────────────────────────────────────
+    # If the rewritten query produces poor retrieval AND differs from the original,
+    # retry with the original query. Use whichever yields better (lower) min score.
+    if (
+        min_score > _SIMILARITY_THRESHOLD
+        and search_query != original_query
+    ):
+        fallback_docs, fallback_scores = _retrieve_with_scores(original_query)
+        fallback_min = min(fallback_scores) if fallback_scores else 1.0
+        if fallback_min < min_score:
+            docs, scores, min_score = fallback_docs, fallback_scores, fallback_min
+            fallback_used = True
+
     context = "\n\n---\n\n".join(doc.page_content for doc in docs)
 
-    # Construct LLM input: system prompt + full conversation history
+    # ── LLM generation ────────────────────────────────────────────────────────
     system_msg = SystemMessage(content=SYSTEM_PROMPT.format(context=context))
-    llm_input = [system_msg] + list(state["messages"])
+    llm_input  = [system_msg] + list(state["messages"])
+    response   = llm.invoke(llm_input)
 
-    response = llm.invoke(llm_input)
+    chunk_sections = [
+        doc.metadata.get("section") or f"p{doc.metadata.get('page','?')}"
+        for doc in docs
+    ]
 
     log_rag(search_query, len(docs), response.content)
     set_span_attrs({
-        "rag.retrieved_chunks": len(docs),
-        "rag.search_query_length": len(search_query),
-        "rag.response_length": len(response.content),
+        "rag.retrieved_chunks":        len(docs),
+        "rag.search_query_length":     len(search_query),
+        "rag.response_length":         len(response.content),
+        "rag.min_similarity_score":    round(min_score, 4),
+        "rag.retrieval_fallback_used": fallback_used,
+        "rag.chunk_sections":          chunk_sections,
+        "rag.similarity_scores":       [round(s, 4) for s in scores],
     })
 
     return {
-        "messages": [response],           # add_messages reducer appends
-        "llm_answer": response.content,
-        "retrieved_docs": [doc.page_content for doc in docs],
+        "messages":               [response],
+        "llm_answer":             response.content,
+        "retrieved_docs":         [doc.page_content for doc in docs],
+        "retrieval_scores":       scores,
+        "retrieval_fallback_used": fallback_used,
     }

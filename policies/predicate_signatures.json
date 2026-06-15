@@ -1,0 +1,151 @@
+{
+  "predicates": [
+    {
+      "name": "customer",
+      "arity": 1,
+      "args": [
+        "CustID"
+      ],
+      "description": "Customer identifier"
+    },
+    {
+      "name": "booking",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "Booking relationship"
+    },
+    {
+      "name": "age",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "Age"
+      ],
+      "description": "Customer age (integer years)"
+    },
+    {
+      "name": "has_adult_companion",
+      "arity": 1,
+      "args": [
+        "CustID"
+      ],
+      "description": "Minor has adult companion"
+    },
+    {
+      "name": "days_until_holiday",
+      "arity": 2,
+      "args": [
+        "BookID",
+        "Days"
+      ],
+      "description": "Days until departure (integer)"
+    },
+    {
+      "name": "paid_full",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "Full balance paid"
+    },
+    {
+      "name": "includes_flight",
+      "arity": 1,
+      "args": [
+        "BookID"
+      ],
+      "description": "Booking includes a flight"
+    },
+    {
+      "name": "complaint_filed_days",
+      "arity": 3,
+      "args": [
+        "CustID",
+        "BookID",
+        "Days"
+      ],
+      "description": "Days after return complaint filed"
+    },
+    {
+      "name": "injury_claim_filed_days",
+      "arity": 3,
+      "args": [
+        "CustID",
+        "BookID",
+        "Days"
+      ],
+      "description": "Days after incident injury filed"
+    },
+    {
+      "name": "llm_approves_booking",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "LLM says booking is valid"
+    },
+    {
+      "name": "llm_rejects_booking",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "LLM says booking is invalid"
+    },
+    {
+      "name": "llm_claims_cancellation_fee",
+      "arity": 3,
+      "args": [
+        "CustID",
+        "BookID",
+        "Percent"
+      ],
+      "description": "LLM claims cancellation % fee"
+    },
+    {
+      "name": "llm_claims_fee",
+      "arity": 4,
+      "args": [
+        "CustID",
+        "BookID",
+        "FeeType",
+        "AmountPence"
+      ],
+      "description": "LLM claims amendment fee (pence)"
+    },
+    {
+      "name": "llm_claims_atol_protected",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "LLM claims ATOL financial protection applies"
+    },
+    {
+      "name": "llm_claims_abta_protected",
+      "arity": 2,
+      "args": [
+        "CustID",
+        "BookID"
+      ],
+      "description": "LLM claims ABTA financial protection applies"
+    },
+    {
+      "name": "llm_claims_amendment_blocked",
+      "arity": 3,
+      "args": [
+        "CustID",
+        "BookID",
+        "ChangeType"
+      ],
+      "description": "LLM says this change is treated as cancellation"
+    }
+  ]
+}

@@ -20,8 +20,10 @@ class GuardrailsState(TypedDict):
     rewritten_query: str        # Policy-vocabulary retrieval query (rule-based or LLM)
 
     # ── RAG Agent outputs ─────────────────────────────────────────────
-    retrieved_docs: list[str]   # Top-K policy chunks retrieved this turn
-    llm_answer: str             # Raw text response from the LLM
+    retrieved_docs: list[str]        # Top-K policy chunks retrieved this turn
+    retrieval_scores: list[float]    # Similarity scores for each retrieved chunk
+    retrieval_fallback_used: bool    # True if original query was used after rewrite gave poor results
+    llm_answer: str                  # Raw text response from the LLM
 
     # ── Classifier outputs ────────────────────────────────────────────
     is_clarification: bool      # No CLAIM/REFUSAL marker → LLM asked for info
@@ -29,8 +31,10 @@ class GuardrailsState(TypedDict):
     classification_error: bool  # Both CLAIM and REFUSAL present → escalate
 
     # ── Fact Extraction Agent outputs ─────────────────────────────────
-    extracted_claims: list[str] # Raw "CLAIM:" lines from LLM answer
-    extracted_facts: list[str]  # Validated ASP atoms (e.g. days_until_holiday("b1",65).)
+    extracted_claims: list[str]      # Raw "CLAIM:" lines from LLM answer
+    extracted_facts: list[str]       # Validated ASP atoms (e.g. days_until_holiday("b1",65).)
+    unextractable_claims: list[str]  # CLAIM: lines that had no matching ASP predicate
+    partial_validation: bool         # True if any claims were unextractable → escalate on approve
 
     # ── ASP Validator outputs ─────────────────────────────────────────
     validation_passed: bool

@@ -51,20 +51,24 @@ def log_turn(
     decision: str,
     latency_ms: int,
     retrieved_docs: list[str] | None = None,
-) -> None:
+    timestamp: str | None = None,
+) -> str:
     """
     Write one audit record for a completed graph turn.
 
     Called after every graph.invoke() — regardless of decision outcome.
     Skips logging if decision is 'error' (unexpected state).
-    retrieved_docs: top-K policy chunks returned by ChromaDB for this query.
+
+    Returns the ISO timestamp used in the record (so callers can build
+    the turn_key = f"{thread_id}_{timestamp}" for review lookup).
     """
     if decision == "error":
-        return
+        return ""
 
+    ts = timestamp or datetime.now(timezone.utc).isoformat()
     record = {
         "thread_id": thread_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": ts,
         "user_query": user_query,
         "llm_answer": llm_answer,
         "retrieved_docs": [d[:300] for d in (retrieved_docs or [])],  # first 300 chars each
@@ -78,6 +82,8 @@ def log_turn(
         _write_postgres(record)
     else:
         _write_jsonl(record)
+
+    return ts
 
 
 def query_logs(thread_id: str | None = None, limit: int = 50) -> list[dict]:

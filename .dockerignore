@@ -1,0 +1,34 @@
+# Secrets — never in image
+.env
+
+# Git history
+.git
+.gitignore
+
+# Python bytecode
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Tool caches
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Runtime data — served from named volumes, not baked into image
+data/chroma/
+logs/
+
+# Dev/evaluation artifacts (not needed at runtime)
+evaluation/
+docs/
+documentation/
+cases/
+tests/
+frontend/
+
+# Large binary files
+*.pdf
+*.docx

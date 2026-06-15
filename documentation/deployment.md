@@ -37,15 +37,24 @@ cp .env.example .env
 This system uses **AWS IAM Identity Center (SSO)** temporary credentials.
 Credentials expire every ~1 hour and must be refreshed.
 
-**Credential flow:**
+**Credential flow (local development):**
 ```
-AWS SSO Portal → ~/.aws/credentials [default] → boto3 (via credentials_profile_name="default")
+AWS SSO Portal → ~/.aws/credentials [default]
+     └→ boto3 reads AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN
+        directly from environment — no credentials_profile_name in code (removed in ISS-003)
 ```
 
-**Never put credentials in `.env`** — temporary STS tokens (`ASIA...`) in `.env`
-override `~/.aws/credentials` and cause `ExpiredTokenException` errors.
+**Credential flow (Docker):**
+```
+AWS SSO Portal → download credentials → paste into .env (env vars, not committed)
+     └→ docker-compose injects them as uppercase AWS_* env vars into containers
+```
 
-### Refreshing credentials
+> **Note:** `credentials_profile_name` was removed from all boto3 constructors in ISS-003
+> because it forced boto3 to ignore environment variables, breaking Docker deployment.
+> See `docs/08_issues_and_fixes.md` for full details.
+
+### Refreshing credentials (local)
 
 1. Go to your AWS SSO portal URL
 2. Select account `156041425100` → role `AdministratorAccess`
@@ -70,22 +79,23 @@ aws sts get-caller-identity --profile default
 
 ## 3. One-Time Policy Ingestion
 
-Run once to build the ChromaDB vector store from the policy PDF:
+Run once to build the ChromaDB vector store from the policy markdown file:
 
 ```bash
 source .venv/bin/activate
-python scripts/ingest_policy.py
+python scripts/ingest_policy.py --embedding bedrock
 ```
 
 Expected output:
 ```
-[ingestor] Extracted 8 pages with content.
+[ingestor] Read markdown → data/policy_text/Terms and conditions_raw.md  (12,345 chars)
 [ingestor] Created 27 chunks (size=900, overlap=175).
-[ingestor] Done. 27 chunks stored in 'holiday_policy'.
+[ingestor] Done. 27 chunks stored in 'holiday_policy_bedrock'.
 Ingested 27 chunks in 8.1s.
 ```
 
-The vector store is saved to `data/chroma/holiday_policy/`.
+The vector store is saved to `data/chroma/`. Use `--embedding huggingface` for the local
+HuggingFace backend (collection: `holiday_policy_hf`, no AWS credentials needed).
 
 ---
 
@@ -132,12 +142,41 @@ python scripts/view_audit_log.py --thread session-001
 
 ---
 
-## 5. Docker Compose (PostgreSQL + Grafana)
+## 5. Full Docker Deployment (all services)
 
-For production-grade persistence:
+To run the entire system in containers (API + UIs + PostgreSQL + Grafana):
 
 ```bash
-docker-compose up -d
+# 1. Ensure .env has real credentials and correct DATABASE_URL
+#    DATABASE_URL=postgresql://cloudway:cloudway@postgres:5432/guardrails  ← use 'postgres' not 'localhost'
+
+# 2. Build image (first time only — ~5 min)
+docker compose build
+
+# 3. Populate ChromaDB (first time only)
+docker compose run --rm api python scripts/ingest_policy.py --embedding bedrock
+
+# 4. Start all services
+docker compose up -d
+```
+
+Services started:
+| Service | Port | Description |
+|---|---|---|
+| `api` | 8000 | FastAPI REST layer — `/docs` for Swagger UI |
+| `ui` | 8501 | Streamlit chat interface |
+| `review` | 8502 | Streamlit reviewer dashboard |
+| `postgres` | 5432 | PostgreSQL (state checkpointing) |
+| `grafana-lgtm` | 3000 | Grafana + Tempo + Loki + Prometheus |
+
+To stop: `docker compose down`
+
+### Docker Compose (PostgreSQL + Grafana only)
+
+For local dev with only the infrastructure services:
+
+```bash
+docker compose up postgres grafana-lgtm -d
 
 # Initialize PostgreSQL schema
 python scripts/init_db.py

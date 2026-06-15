@@ -1,0 +1,109 @@
+{
+  "terms": {
+    "amendment fee": [
+      "change fee",
+      "fee to modify booking",
+      "cost to alter holiday",
+      "modification charge"
+    ],
+    "cancellation fee": [
+      "termination fee",
+      "cancellation charge",
+      "cost to cancel",
+      "penalty for cancelling"
+    ],
+    "deposit": [
+      "upfront payment",
+      "initial payment required",
+      "money paid upfront",
+      "advance payment"
+    ],
+    "84 days": [
+      "12 weeks before holiday",
+      "three months prior",
+      "major change notification threshold",
+      "compensation eligibility date"
+    ],
+    "ATOL": [],
+    "ABTA": [],
+    "minor": [
+      "child",
+      "young person under age",
+      "passenger under 18"
+    ],
+    "adult companion": [
+      "accompanying adult",
+      "adult travelling with child",
+      "responsible adult"
+    ],
+    "complaint deadline": [
+      "time limit to complain",
+      "deadline for raising complaint",
+      "complaint submission window"
+    ],
+    "injury claim": [
+      "personal injury claim",
+      "compensation for injury",
+      "damage claim"
+    ],
+    "lead name": [
+      "primary passenger name",
+      "main booking name",
+      "first passenger name",
+      "account holder name"
+    ],
+    "termination fee": [
+      "cancellation penalty",
+      "cancellation charge",
+      "cost to cancel holiday",
+      "non-refundable fee"
+    ],
+    "treated as a cancellation": [
+      "counts as cancellation",
+      "charged like a cancellation",
+      "cancellation fees apply",
+      "full cancellation penalty"
+    ],
+    "major change": [
+      "significant change to holiday",
+      "substantial modification",
+      "important alteration to booking"
+    ],
+    "non-refundable": [
+      "cannot get money back",
+      "no refund available",
+      "money is lost",
+      "not returnable"
+    ],
+    "replacement holiday": [
+      "alternative holiday",
+      "substitute booking",
+      "different holiday offered",
+      "alternative trip"
+    ],
+    "price increase": [
+      "holiday costs more",
+      "additional charge",
+      "price goes up",
+      "extra cost added"
+    ],
+    "exchange rate adjustment": [
+      "currency fluctuation charge",
+      "foreign exchange fee",
+      "currency adjustment",
+      "exchange rate change"
+    ],
+    "events beyond our control": [
+      "circumstances we cannot prevent",
+      "force majeure",
+      "unforeseeable circumstances",
+      "things outside our control"
+    ],
+    "compensation per person": [
+      "payment per passenger",
+      "refund amount each person gets",
+      "individual compensation",
+      "per-person payment"
+    ]
+  }
+}

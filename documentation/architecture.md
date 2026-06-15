@@ -21,6 +21,15 @@ START
   │
   ▼
 ┌─────────────────────────────────────────┐
+│  Query Rewriter (LLM — Haiku 4.5)       │
+│  • Normalises query vocabulary          │
+│  • Maps user terms → policy predicates  │
+│  • Falls back to original if            │
+│    ChromaDB score > 0.5 threshold       │
+└──────────────────┬──────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────┐
 │  AGENT 1: RAG Agent                     │
 │  • Retrieves top-5 policy chunks        │
 │  • Generates response via Claude        │
@@ -81,9 +90,8 @@ START
 | Model | `eu.anthropic.claude-sonnet-4-6` via AWS Bedrock |
 | Temperature | 0 (deterministic) |
 | Max tokens | 2,000 |
-| Retrieval | ChromaDB `holiday_policy` collection, k=5 |
-| Embeddings | Bedrock Titan Embed v2 (`amazon.titan-embed-text-v2:0`), 1024 dims |
-| Profile | `credentials_profile_name=AWS_PROFILE` |
+| Retrieval | ChromaDB (`holiday_policy_bedrock` or `holiday_policy_hf`), k=5 |
+| Embeddings | Bedrock Titan Embed v2 (`amazon.titan-embed-text-v2:0`, 1024 dims) or HuggingFace MiniLM (384 dims) — selected by `EMBEDDING_BACKEND` env var |
 
 **System prompt behavior:**
 - Rule 1: Answer grounded in policy only — never invent values
@@ -115,28 +123,30 @@ has_refusal = any(line.startswith("REFUSAL:") for line in lines)
 | Model | Same as RAG agent (reuses `BEDROCK_LLM`) |
 | Temperature | 0 |
 | Max tokens | 800 (facts only, no prose) |
-| Vocabulary | 13 predicates (customer, booking, age, days_until_holiday, …) |
+| Vocabulary | 16 predicates (customer, booking, age, days_until_holiday, …) |
 | Validation | Regex: `^[a-z][a-z_]*\("…"|\d+(,…)*\)\.$` |
 
-**Vocabulary (13 predicates):**
+**Vocabulary (16 predicates):**
 ```
 customer/1, booking/2, age/2, has_adult_companion/1,
 days_until_holiday/2, paid_full/2, includes_flight/1,
 complaint_filed_days/3, injury_claim_filed_days/3,
 llm_approves_booking/2, llm_rejects_booking/2,
-llm_claims_cancellation_fee/3, llm_claims_fee/4
+llm_claims_cancellation_fee/3, llm_claims_fee/4,
+llm_claims_atol_protected/2, llm_claims_abta_protected/2,
+llm_claims_amendment_blocked/3
 ```
 
-**Known limitation:** Claims outside this vocabulary (ATOL, ABTA, extraordinary
-circumstances) produce no facts → answer escalated as unverifiable.
-This is intentional: the system prefers false escalation over false approval.
+**Known limitation:** Claims outside this vocabulary (extraordinary circumstances,
+force majeure) produce no facts → answer escalated as unverifiable via `partial_validation`
+flag. This is intentional: the system prefers false escalation over false approval.
 
 ### 3.4 ASP Validator (`src/agents/asp_validator.py`)
 
 | Property | Value |
 |---|---|
 | Solver | Clingo 5.8.0 (Python API) |
-| Policy file | `policies/holiday_policy.lp` (228 lines, 28 clauses) |
+| Policy file | `policies/holiday_policy.lp` (318 lines) |
 | Latency | < 15 ms |
 | Output | `shown=True` atoms via `#show` directives |
 

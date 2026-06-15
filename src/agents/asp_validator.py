@@ -19,16 +19,20 @@ from src.pipeline_logger import log_asp
 
 POLICY_FILE = "policies/holiday_policy.lp"
 
-# Violation predicates defined in holiday_policy.lp
+# LLM-answer-level violation predicates defined in holiday_policy.lp.
+# ISS-005: Only include atoms that represent a WRONG LLM answer, NOT intermediate
+# derived facts (booking_invalid, lead_name_invalid, complaint_invalid, etc.).
+# Those intermediate facts are ASP-internal computations used by the validation
+# layer — they fire correctly even when the LLM answer is right (e.g. TC002:
+# LLM correctly refuses a minor booking → lead_name_invalid fires but that is
+# expected, not a guardrail violation).
 VIOLATION_PREFIXES = (
-    "answer_invalid",
-    "booking_invalid",
-    "lead_name_invalid",
-    "minor_unaccompanied",
-    "complaint_invalid",
-    "injury_claim_invalid",
-    "cancellation_claim_incorrect",
-    "fee_claim_incorrect",
+    "answer_invalid",                  # LLM approved invalid booking OR rejected valid booking
+    "cancellation_claim_incorrect",    # LLM quoted wrong cancellation percentage
+    "fee_claim_incorrect",             # LLM quoted wrong amendment fee
+    "atol_claim_incorrect",            # LLM wrongly claimed ATOL protection (no flight in booking)
+    "abta_claim_incorrect",            # LLM wrongly claimed ABTA protection (flight present)
+    "amendment_assessment_incorrect",  # LLM wrongly said amendment is blocked/allowed
 )
 
 
