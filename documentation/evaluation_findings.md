@@ -1,21 +1,24 @@
 # Evaluation Findings
 
 **Date:** June 12, 2026 (updated; original run June 4, 2026)  
-**Evaluation suite:** `tests/fixtures/test_cases.json` (25 cases)  
-**Script:** `scripts/benchmark_baselines.py` + `scripts/analyze_results.py`  
-**Raw results:** `logs/baseline_[A|B|C]_*.json`
+**Evaluation suite:** `tests/fixtures/test_cases.json` (31 cases, 11 policy categories)  
+**Script:** `scripts/benchmark_baselines.py` + `scripts/analyze_results.py` + `scripts/compare_embeddings.py`  
+**Raw results:** `logs/baseline_[A|B|C]_*.json` · `evaluation/embedding_comparison_report.md`
 
 | Date | Change | Score |
 |---|---|---|
 | June 4, 2026 | TC023 FACT_PATTERN regex fix; initial evaluation | 76% (19/25) |
 | June 11, 2026 | RAG system prompt fix (out-of-scope handling); re-run | 80% (20/25) |
-| June 12, 2026 | Query augmentation + system prompt EXCEPTIONS block; all 5 failures resolved | **100% (25/25)** |
+| June 12, 2026 | LLM-based Query Rewriter (Haiku 4.5) + system prompt EXCEPTIONS block; all failures resolved | **100% (25/25)** |
+| June 12, 2026 | TC026–TC031 added (query_rewriter_vocabulary_gap); embedding comparison run | **100% (31/31) Bedrock · 96.8% (30/31) HuggingFace** |
 
 ---
 
 ## 1. Baseline Comparison Results
 
-Three baselines were evaluated on 25 test cases covering 10 policy categories.
+Three baselines were evaluated on 25 test cases covering 10 policy categories (TC001–TC025).
+A subsequent embedding comparison ran all 31 cases (TC001–TC031, including 6 query-rewriter
+vocabulary tests) against both embedding backends — see Section 8.
 
 ### 1.1 Summary Table
 
@@ -173,18 +176,23 @@ each failure, its root cause, and the fix applied for traceability.
 
 | Case | Query | Root Cause | Fix |
 |---|---|---|---|
-| TC001 | "Can John (age 35) make a booking for holiday ID B001...?" | Booking ID noise drowned semantic signal | `_augment_query()`: age+booking intent → `"lead name must be adult age requirement booking eligibility"` |
-| TC002 | "Can Sarah (age 16) make a booking?" | Vocabulary gap: "age 16" ≠ "adult" | Same augmentation pattern + Rule 3 EXCEPTION (a) |
-| TC003 | "Can Emma (age 15) travel with parent?" | Vocabulary gap: "with parent" ≠ "accompanied" | `_augment_query()`: minor+companion → `"minor under 18 accompanied adult companion travel"` |
-| TC008 | "Full payment needed if 100 days away?" | Payment rule chunk garbled (PDF Caesar+3 encoding) | Manual chunk added to ChromaDB + payment augmentation pattern |
+| TC001 | "Can John (age 35) make a booking for holiday ID B001...?" | Booking ID noise drowned semantic signal | Query Rewriter normalises to policy vocabulary; Rule 3 EXCEPTION (a) |
+| TC002 | "Can Sarah (age 16) make a booking?" | Vocabulary gap: "age 16" ≠ "adult" | Query Rewriter maps age phrasing → lead-name eligibility terms |
+| TC003 | "Can Emma (age 15) travel with parent?" | Vocabulary gap: "with parent" ≠ "accompanied" | Query Rewriter maps minor+parent → "minor accompanied adult companion" |
+| TC008 | "Full payment needed if 100 days away?" | Payment rule chunk missing (PDF Caesar+3 encoding garbled page 1) | Markdown ingestion (ISS-001) makes the 84-day payment rule correctly retrievable |
 
 **Root cause:** Semantic distance between query vocabulary and policy text vocabulary.
 The query uses "age 35", "age 16", "age 15", "100 days" but the policy uses
 "adult", "lead name", "18 or older", "84 days".
 
-**Fix applied:** Rule-based `_augment_query()` in `rag_agent.py` replaces noisy queries
-with clean policy-vocabulary retrieval queries for 4 identified patterns.
-Manual ChromaDB chunk added for the payment deadline rule (total: 28 chunks).
+**Fix applied:** LLM-based **Query Rewriter** (`src/agents/query_rewriter.py`, Claude Haiku 4.5)
+runs as the first pipeline node before the RAG Agent. It rewrites the user query into
+policy-vocabulary terms, then passes the rewritten query to ChromaDB retrieval. A
+similarity-score fallback prevents over-rewriting: if the rewritten query scores
+> 0.5 ChromaDB distance, the original query is used instead (ISS-011).
+
+TC008 additionally required switching from PDF to Markdown ingestion (ISS-001), which
+made the payment deadline rule correctly available in ChromaDB without manual chunk insertion.
 
 ### 5.2 ~~Group 2 — Over-Cautious Slot Detection (TC007)~~ FIXED June 12
 
@@ -260,21 +268,26 @@ eliminates the false acceptance of hallucinated answers** (0% false accept rate 
 
 ### 6.2 Honest Limitations
 
-All 25 benchmark cases are now correctly handled. However, the fixes applied to reach
-100% reveal structural limitations relevant to the thesis:
+All 31 benchmark cases are now correctly handled. The fixes applied reveal structural
+limitations relevant to the thesis, some of which have since been resolved:
 
-1. **RAG vocabulary gap requires explicit bridging.** The current fix (`_augment_query()`)
-   is rule-based and covers only 4 hardcoded patterns. Queries outside those patterns
-   may still fail on vocabulary mismatch. A generalised solution (LLM-based query
-   rewriting) is planned as the next architectural improvement (see Section 5.4).
+1. **~~RAG vocabulary gap requires explicit bridging.~~** ✅ **Resolved.** The LLM-based
+   Query Rewriter (Claude Haiku 4.5, `src/agents/query_rewriter.py`) generalises
+   vocabulary bridging beyond the 4 hardcoded patterns of the earlier approach.
+   TC026–TC031 specifically validate the rewriter on novel vocabulary gaps —
+   all 6 pass on both Bedrock and HuggingFace backends (see Section 8).
 2. **Fact extraction is the bottleneck.** Non-formalizable claims (ATOL, ABTA) cannot
-   enter the validation pipeline, reducing the system's coverage to quantitative clauses.
+   enter the validation pipeline, reducing the system's symbolic coverage to quantitative
+   clauses. These trigger the `partial_validation` flag → automatic escalation. The
+   system prefers false escalation over false approval (conservative by design).
 3. **Slot detection is conservative.** The EXCEPTIONS block in Rule 3 was required to
    prevent unnecessary clarification requests — this points to a tension between the
    LLM's default caution and the policy's universality assumptions.
-4. **ChromaDB chunk quality is uneven.** ~40% of original PDF chunks contain Caesar+3
-   font encoding artifacts making them semantically unsearchable. One chunk was added
-   manually. A robust re-ingestion with encoding correction is the proper fix.
+4. **~~ChromaDB chunk quality is uneven (PDF encoding artifacts).~~** ✅ **Resolved.**
+   Ingestion was switched from the original PDF (Caesar+3 font on page 1 → garbled text)
+   to a clean markdown file `data/policy_text/Terms and conditions_raw.md` (ISS-001).
+   All policy sections, including the payment deadline rule, are now correctly chunked
+   and retrievable without manual intervention.
 
 ### 6.3 Positioning in the Literature
 
@@ -288,7 +301,51 @@ benefits significantly from downstream ASP verification.
 
 ---
 
-## 7. Reproducibility
+## 7. Embedding Backend Comparison (D4)
+
+> *Does the choice of embedding model affect system accuracy?*
+
+Both embedding backends were evaluated on all 31 test cases using `scripts/compare_embeddings.py`.
+Full per-case results: `evaluation/embedding_comparison_report.md`.
+
+### 7.1 Summary
+
+| Metric | Bedrock (Titan Embed v2) | HuggingFace (MiniLM-L12-v2) |
+|---|---|---|
+| **Accuracy** | **31/31 (100%)** | 30/31 (96.8%) |
+| **Avg latency** | 3,864 ms | 3,661 ms |
+| **Avg min similarity score** | 1.045 | 0.914 |
+
+### 7.2 Disagreement Case
+
+One case (TC023) produced different decisions between backends:
+
+| Case | Query | Expected | Bedrock | HuggingFace |
+|---|---|---|---|---|
+| TC023 | "Is my holiday financially protected if TUI goes bust?" | `approved` | ✅ approved | ❌ refused_out_of_scope |
+
+**Root cause:** HuggingFace MiniLM (384 dims) retrieved lower-scoring chunks for the
+financial protection query (min score 0.591 vs Bedrock 0.825). The lower-quality context
+caused the RAG Agent to issue a REFUSAL instead of CLAIM-based answer about ATOL/ABTA.
+
+**Implication:** Bedrock Titan v2 produces higher-quality semantic matches for this domain,
+particularly for financial protection terminology. The 3.2% accuracy gap between backends
+favours Bedrock for production deployment.
+
+### 7.3 Query Rewriter Cases (TC026–TC031)
+
+Six new test cases were added to validate the Query Rewriter on vocabulary gap scenarios:
+
+| Category | Cases | Bedrock | HuggingFace |
+|---|---|---|---|
+| `query_rewriter_vocabulary_gap` | TC026–TC031 | ✅ 6/6 | ✅ 6/6 |
+
+All 6 cases pass on both backends, confirming the Query Rewriter's generalisation
+beyond the 4 patterns handled by the earlier rule-based approach.
+
+---
+
+## 8. Reproducibility
 
 All results are fully reproducible:
 
