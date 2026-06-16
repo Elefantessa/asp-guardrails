@@ -28,6 +28,9 @@ by combining RAG (retrieval) with ASP symbolic validation (Clingo).
 User Query
     │
     ▼
+Query Rewriter (Claude Haiku 4.5)
+    │  normalises vocabulary, similarity fallback
+    ▼
 RAG Agent (Claude via Bedrock)
     │  CLAIM: / REFUSAL: / clarification
     ▼
@@ -49,6 +52,11 @@ Classifier (deterministic)
 
 **Key result:** RAG+ASP detects 100% of injected hallucinations vs 0% for LLM-only and RAG-only baselines.
 
+The system is also evaluated across two embedding backends (Bedrock Titan v2 vs HuggingFace
+MiniLM): 100% (31/31) vs 96.8% (30/31) — see [evaluation_findings.md §7](evaluation_findings.md#7-embedding-backend-comparison-d4).
+It ships as a 5-service Docker stack (API, 2× Streamlit UI, PostgreSQL, Grafana) — see
+[deployment.md](deployment.md).
+
 ---
 
 ## Research Questions
@@ -56,5 +64,5 @@ Classifier (deterministic)
 | RQ | Question | Evidence |
 |---|---|---|
 | **RQ1** | Does ASP reduce hallucination rates? | 100% detection rate vs 0% baselines — see [evaluation_findings.md](evaluation_findings.md) |
-| **RQ2** | What is the precision-recall of LLM fact extraction? | Fails on non-formalizable claims (ATOL) — see [evaluation_findings.md#rq2](evaluation_findings.md#rq2-fact-extraction-precision-recall) |
-| **RQ3** | What fraction of policy clauses can be ASP-encoded? | Quantitative clauses (fees, dates) = fully encodable; qualitative = not — see [evaluation_findings.md#rq3](evaluation_findings.md#rq3-asp-formalizability) |
+| **RQ2** | What is the precision-recall of LLM fact extraction? | Fails on non-formalizable claims (ATOL) — see [evaluation_findings.md §3](evaluation_findings.md#3-rq2--fact-extraction-precision-recall) |
+| **RQ3** | What fraction of policy clauses can be ASP-encoded? | Quantitative clauses (fees, dates) = fully encodable; qualitative = not — see [evaluation_findings.md §4](evaluation_findings.md#4-rq3--asp-formalizability) |
