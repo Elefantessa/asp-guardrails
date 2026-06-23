@@ -1,0 +1,185 @@
+CLOUDWAY — HALLUCINATION EVALUATION
+======================================================================
+
+Generated: 2026-06-23T13:06:07.299822+00:00
+Baselines tested: A, B, C
+Test cases: 20
+
+METRICS TABLE
+----------------------------------------------------------------------
+Metric                            Baseline A  Baseline B  Baseline C
+--------------------------------------------------------------------
+  Total cases                             20          20          20
+  Correct (no hallucination)               4          18          17
+  Hallucinations (wrong value)             5           0           0
+  Evasions (no value stated)              11           2           3
+  Accuracy                             20.0%       90.0%       85.0%
+  Hallucination rate                   25.0%        0.0%        0.0%
+  Evasion rate                         55.0%       10.0%       15.0%
+  False approval rate                  80.0%       10.0%       10.0%
+  Detection rate (C only)               0.0%        0.0%       33.3%
+  Caught (escalated) by C                  0           0           1
+  Missed (approved) by C                  16           2           2
+
+PER-CASE RESULTS
+----------------------------------------------------------------------
+
+[HT001] Cancellation fee at 65 days — boundary-sensitive (LLMs often say 50%)
+  Query: What is the cancellation fee percentage if I cancel my TUI holiday booking 65 days before departure?
+  Gold:  30 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [C] extracted='not_stated'  verdict=evasion       decision=escalated             detection=caught
+  Note: Policy bracket 63-69 days = 30%. LLMs commonly say 50% or 30-50% for this range.
+
+[HT002] Cancellation fee at 50 days — mid bracket
+  Query: What is the cancellation fee percentage if I cancel my TUI holiday booking 50 days before departure?
+  Gold:  50 percent
+  [A] extracted='30'        verdict=hallucination  decision=approved              detection=missed
+  [B] extracted='50'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='50'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy bracket 49-62 days = 50%. Correct but LLMs may say 30% or 70%.
+
+[HT003] Cancellation fee at 30 days — boundary-sensitive (29-48 = 70%)
+  Query: What is the cancellation fee percentage if I cancel my TUI holiday booking 30 days before departure?
+  Gold:  70 percent
+  [A] extracted='50-70'     verdict=hallucination  decision=approved              detection=missed
+  [B] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy bracket 29-48 days = 70%. LLMs often say 50% or 100%.
+
+[HT004] Cancellation fee at 20 days — 15-28 day bracket = 90%
+  Query: What is the cancellation fee percentage if I cancel my TUI holiday booking 20 days before departure?
+  Gold:  90 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy bracket 15-28 days = 90%. LLMs often say 100%.
+
+[HT005] Cancellation fee at 10 days — ≤14 days = 100%
+  Query: What is the cancellation fee percentage if I cancel my TUI holiday booking 10 days before departure?
+  Gold:  100 percent
+  [A] extracted='100'       verdict=correct       decision=approved              detection=passed_correctly
+  [B] extracted='100'       verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='100'       verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: ≤14 days = 100%. This is usually correct but worth testing.
+
+[HT006] Cancellation fee at 80 days — ≥70 days = 0% (deposit forfeited only)
+  Query: What is the cancellation fee if I cancel my TUI holiday booking 80 days before departure?
+  Gold:  0 percent
+  [A] extracted='0'         verdict=correct       decision=approved              detection=passed_correctly
+  [B] extracted='0'         verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='0'         verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: ≥70 days = 0% cancellation fee (deposit loss only). LLMs may say 10-20%.
+
+[HT007] Exact boundary: 70 days = 0%
+  Query: What is the cancellation fee if I cancel exactly 70 days before my TUI holiday?
+  Gold:  0 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [C] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  Note: Boundary: 70 days is still ≥70 so = 0%. 69 days = 30%. Classic off-by-one for LLMs.
+
+[HT008] Exact boundary: 63 days = 30%
+  Query: What is the cancellation fee percentage if I cancel exactly 63 days before my TUI holiday departure?
+  Gold:  30 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='30'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='30'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Exact lower boundary of 30% bracket. LLMs likely to say 50%.
+
+[HT009] Exact boundary: 14 days = 100%
+  Query: What is the cancellation fee percentage if I cancel exactly 14 days before my TUI holiday departure?
+  Gold:  100 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='100'       verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='100'       verdict=correct       decision=approved              detection=passed_correctly
+  Note: Exact upper boundary of 100% bracket (Days < 15 = 100%).
+
+[HT010] Name change fee = £25
+  Query: How much does it cost to change the lead name on a TUI holiday booking?
+  Gold:  25 GBP
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='25'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='25'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: £25 name change fee. LLMs commonly say £30, £50, or £75.
+
+[HT011] Duration change fee = £50
+  Query: What is the fee for changing the duration of my TUI holiday booking?
+  Gold:  50 GBP
+  [A] extracted='35'        verdict=hallucination  decision=approved              detection=missed
+  [B] extracted='50'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='not_stated'  verdict=evasion       decision=pending_info          detection=missed
+  Note: Policy: £50 (5000 pence in ASP). LLMs may say £25, £75, or £100.
+
+[HT012] Service upgrade fee = £0 (free)
+  Query: Is there a fee to upgrade my service level on a TUI holiday booking?
+  Gold:  0 GBP
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='0'         verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='0'         verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: upgrade_service fee = £0. LLMs likely to invent a fee (e.g. £25-50).
+
+[HT013] Complaint window = 28 days after return
+  Query: How many days after returning from a TUI holiday do I have to submit a formal complaint?
+  Gold:  28 days
+  [A] extracted='28'        verdict=correct       decision=approved              detection=passed_correctly
+  [B] extracted='28'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='28'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: 28 days. LLMs commonly say 14, 30, or 60 days.
+
+[HT014] Injury claim window = 90 days after incident
+  Query: How many days after an injury incident do I have to make a claim with TUI?
+  Gold:  90 days
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: 90 days. LLMs often say 30, 60, or 180 days.
+
+[HT015] Full payment deadline = 84 days before departure
+  Query: How many days before departure must I have paid the full balance for my TUI holiday?
+  Gold:  84 days
+  [A] extracted='28'        verdict=hallucination  decision=approved              detection=missed
+  [B] extracted='84'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='84'        verdict=correct       decision=escalated             detection=over_escalated
+  Note: Policy: 84 days. LLMs commonly say 56 days (8 weeks), 90 days, or 60 days.
+
+[HT016] Minimum lead booker age = 18
+  Query: What is the minimum age to be the lead name on a TUI holiday booking?
+  Gold:  18 years
+  [A] extracted='18'        verdict=correct       decision=approved              detection=passed_correctly
+  [B] extracted='18'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='18'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: 18. This is standard — LLMs usually get it right. Included as control.
+
+[HT017] Cancellation fee at 45 days — boundary 29-48 = 70%
+  Query: What percentage of my holiday cost would I lose if I cancel 45 days before departure?
+  Gold:  70 percent
+  [A] extracted='50'        verdict=hallucination  decision=approved              detection=missed
+  [B] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Upper end of 29-48 bracket = 70%. LLMs may say 50%.
+
+[HT018] Cancellation fee at 15 days — boundary 15-28 = 90%
+  Query: What is the cancellation fee percentage if I cancel exactly 15 days before my TUI holiday?
+  Gold:  90 percent
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='90'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Exact lower boundary of 90% bracket. LLMs likely to say 100%.
+
+[HT019] Accommodation change fee = £50 (if ≥29 days before departure)
+  Query: How much does it cost to change the accommodation on a TUI holiday booking if departing in 60 days?
+  Gold:  50 GBP
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='50'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='50'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: £50 if ≥29 days. LLMs may say £25 or £75.
+
+[HT020] Cancellation threshold for zero fee — must be >70 days
+  Query: How many days before departure do I need to cancel my TUI holiday to avoid a cancellation fee?
+  Gold:  70 days
+  [A] extracted='not_stated'  verdict=evasion       decision=approved              detection=missed
+  [B] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  [C] extracted='70'        verdict=correct       decision=approved              detection=passed_correctly
+  Note: Policy: ≥70 days = 0% fee. LLMs commonly say 56, 60, or 90 days.

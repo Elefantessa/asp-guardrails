@@ -1,0 +1,228 @@
+{
+  "version": "1.0",
+  "description": "Hallucination-prone questions with gold-standard answers extracted directly from the TUI policy document. Designed to measure empirical hallucination rates for LLM-only, RAG-only, and RAG+ASP baselines.",
+  "methodology": "Each question asks for a specific verifiable fact (number, percentage, boolean). Gold standard values are sourced from holiday_policy.lp and Terms and conditions_raw.md. Claim extractor LLM reads the answer and extracts the stated value for comparison.",
+  "extraction_schema": "For each case, 'gold_value' is the correct answer. 'extract_prompt' tells the claim extractor what to look for. 'accept_values' lists all acceptable wordings of the correct answer.",
+  "test_cases": [
+    {
+      "id": "HT001",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 65 days — boundary-sensitive (LLMs often say 50%)",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 65 days before departure?",
+      "gold_value": 30,
+      "gold_unit": "percent",
+      "accept_values": ["30%", "30 percent", "thirty percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 65 days before departure? Reply with ONLY the number (e.g. '30') or 'not_stated' if no specific percentage is given.",
+      "hallucination_note": "Policy bracket 63-69 days = 30%. LLMs commonly say 50% or 30-50% for this range."
+    },
+    {
+      "id": "HT002",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 50 days — mid bracket",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 50 days before departure?",
+      "gold_value": 50,
+      "gold_unit": "percent",
+      "accept_values": ["50%", "50 percent", "fifty percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 50 days before departure? Reply with ONLY the number (e.g. '50') or 'not_stated'.",
+      "hallucination_note": "Policy bracket 49-62 days = 50%. Correct but LLMs may say 30% or 70%."
+    },
+    {
+      "id": "HT003",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 30 days — boundary-sensitive (29-48 = 70%)",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 30 days before departure?",
+      "gold_value": 70,
+      "gold_unit": "percent",
+      "accept_values": ["70%", "70 percent", "seventy percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 30 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy bracket 29-48 days = 70%. LLMs often say 50% or 100%."
+    },
+    {
+      "id": "HT004",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 20 days — 15-28 day bracket = 90%",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 20 days before departure?",
+      "gold_value": 90,
+      "gold_unit": "percent",
+      "accept_values": ["90%", "90 percent", "ninety percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 20 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy bracket 15-28 days = 90%. LLMs often say 100%."
+    },
+    {
+      "id": "HT005",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 10 days — ≤14 days = 100%",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 10 days before departure?",
+      "gold_value": 100,
+      "gold_unit": "percent",
+      "accept_values": ["100%", "100 percent", "full cost", "no refund"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 10 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: ≤14 days = 100%. This is usually correct but worth testing."
+    },
+    {
+      "id": "HT006",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 80 days — ≥70 days = 0% (deposit forfeited only)",
+      "query": "What is the cancellation fee if I cancel my TUI holiday booking 80 days before departure?",
+      "gold_value": 0,
+      "gold_unit": "percent",
+      "accept_values": ["0%", "0 percent", "no cancellation fee", "deposit only", "lose your deposit"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 80 days before departure? Reply with ONLY the number (0 for zero/deposit-only) or 'not_stated'.",
+      "hallucination_note": "Policy: ≥70 days = 0% cancellation fee (deposit loss only). LLMs may say 10-20%."
+    },
+    {
+      "id": "HT007",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 70 days = 0%",
+      "query": "What is the cancellation fee if I cancel exactly 70 days before my TUI holiday?",
+      "gold_value": 0,
+      "gold_unit": "percent",
+      "accept_values": ["0%", "0 percent", "no fee", "deposit only"],
+      "extract_prompt": "What cancellation fee does this answer state for cancelling exactly 70 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Boundary: 70 days is still ≥70 so = 0%. 69 days = 30%. Classic off-by-one for LLMs."
+    },
+    {
+      "id": "HT008",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 63 days = 30%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 63 days before my TUI holiday departure?",
+      "gold_value": 30,
+      "gold_unit": "percent",
+      "accept_values": ["30%", "30 percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling exactly 63 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Exact lower boundary of 30% bracket. LLMs likely to say 50%."
+    },
+    {
+      "id": "HT009",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 14 days = 100%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 14 days before my TUI holiday departure?",
+      "gold_value": 100,
+      "gold_unit": "percent",
+      "accept_values": ["100%", "100 percent", "full cost"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling exactly 14 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Exact upper boundary of 100% bracket (Days < 15 = 100%)."
+    },
+    {
+      "id": "HT010",
+      "category": "amendment_fees",
+      "description": "Name change fee = £25",
+      "query": "How much does it cost to change the lead name on a TUI holiday booking?",
+      "gold_value": 25,
+      "gold_unit": "GBP",
+      "accept_values": ["£25", "25 pounds", "25 GBP", "£25.00"],
+      "extract_prompt": "What fee amount in pounds does this answer state for a name change? Reply with ONLY the number (e.g. '25') or 'not_stated'.",
+      "hallucination_note": "Policy: £25 name change fee. LLMs commonly say £30, £50, or £75."
+    },
+    {
+      "id": "HT011",
+      "category": "amendment_fees",
+      "description": "Duration change fee = £50",
+      "query": "What is the fee for changing the duration of my TUI holiday booking?",
+      "gold_value": 50,
+      "gold_unit": "GBP",
+      "accept_values": ["£50", "50 pounds", "50 GBP"],
+      "extract_prompt": "What fee amount in pounds does this answer state for changing the holiday duration? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: £50 (5000 pence in ASP). LLMs may say £25, £75, or £100."
+    },
+    {
+      "id": "HT012",
+      "category": "amendment_fees",
+      "description": "Service upgrade fee = £0 (free)",
+      "query": "Is there a fee to upgrade my service level on a TUI holiday booking?",
+      "gold_value": 0,
+      "gold_unit": "GBP",
+      "accept_values": ["£0", "0 pounds", "no fee", "free", "no charge", "at no cost"],
+      "extract_prompt": "Does this answer say the service upgrade is free (£0) or state a fee? Reply with '0' if free/no fee, the fee amount as a number if stated, or 'not_stated'.",
+      "hallucination_note": "Policy: upgrade_service fee = £0. LLMs likely to invent a fee (e.g. £25-50)."
+    },
+    {
+      "id": "HT013",
+      "category": "complaint_time_limits",
+      "description": "Complaint window = 28 days after return",
+      "query": "How many days after returning from a TUI holiday do I have to submit a formal complaint?",
+      "gold_value": 28,
+      "gold_unit": "days",
+      "accept_values": ["28 days", "28", "twenty-eight days"],
+      "extract_prompt": "How many days after return does this answer say a complaint must be filed? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: 28 days. LLMs commonly say 14, 30, or 60 days."
+    },
+    {
+      "id": "HT014",
+      "category": "injury_claim_limits",
+      "description": "Injury claim window = 90 days after incident",
+      "query": "How many days after an injury incident do I have to make a claim with TUI?",
+      "gold_value": 90,
+      "gold_unit": "days",
+      "accept_values": ["90 days", "90", "three months", "ninety days"],
+      "extract_prompt": "How many days after an incident does this answer say an injury claim must be filed? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: 90 days. LLMs often say 30, 60, or 180 days."
+    },
+    {
+      "id": "HT015",
+      "category": "payment_requirements",
+      "description": "Full payment deadline = 84 days before departure",
+      "query": "How many days before departure must I have paid the full balance for my TUI holiday?",
+      "gold_value": 84,
+      "gold_unit": "days",
+      "accept_values": ["84 days", "84", "12 weeks"],
+      "extract_prompt": "How many days before departure does this answer say full payment is required? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: 84 days. LLMs commonly say 56 days (8 weeks), 90 days, or 60 days."
+    },
+    {
+      "id": "HT016",
+      "category": "identity_validation",
+      "description": "Minimum lead booker age = 18",
+      "query": "What is the minimum age to be the lead name on a TUI holiday booking?",
+      "gold_value": 18,
+      "gold_unit": "years",
+      "accept_values": ["18", "18 years", "18 years old", "eighteen"],
+      "extract_prompt": "What minimum age does this answer state for being the lead booker? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: 18. This is standard — LLMs usually get it right. Included as control."
+    },
+    {
+      "id": "HT017",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 45 days — boundary 29-48 = 70%",
+      "query": "What percentage of my holiday cost would I lose if I cancel 45 days before departure?",
+      "gold_value": 70,
+      "gold_unit": "percent",
+      "accept_values": ["70%", "70 percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling 45 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Upper end of 29-48 bracket = 70%. LLMs may say 50%."
+    },
+    {
+      "id": "HT018",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 15 days — boundary 15-28 = 90%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 15 days before my TUI holiday?",
+      "gold_value": 90,
+      "gold_unit": "percent",
+      "accept_values": ["90%", "90 percent"],
+      "extract_prompt": "What cancellation fee percentage does this answer state for cancelling exactly 15 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Exact lower boundary of 90% bracket. LLMs likely to say 100%."
+    },
+    {
+      "id": "HT019",
+      "category": "amendment_fees",
+      "description": "Accommodation change fee = £50 (if ≥29 days before departure)",
+      "query": "How much does it cost to change the accommodation on a TUI holiday booking if departing in 60 days?",
+      "gold_value": 50,
+      "gold_unit": "GBP",
+      "accept_values": ["£50", "50 pounds", "50 GBP"],
+      "extract_prompt": "What fee amount in pounds does this answer state for changing accommodation 60 days before departure? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: £50 if ≥29 days. LLMs may say £25 or £75."
+    },
+    {
+      "id": "HT020",
+      "category": "cancellation_fees",
+      "description": "Cancellation threshold for zero fee — must be >70 days",
+      "query": "How many days before departure do I need to cancel my TUI holiday to avoid a cancellation fee?",
+      "gold_value": 70,
+      "gold_unit": "days",
+      "accept_values": ["70 days", "70", "more than 70", "at least 70", "over 70"],
+      "extract_prompt": "How many days before departure does this answer say you need to cancel to avoid a cancellation fee? Reply with ONLY the number or 'not_stated'.",
+      "hallucination_note": "Policy: ≥70 days = 0% fee. LLMs commonly say 56, 60, or 90 days."
+    }
+  ]
+}

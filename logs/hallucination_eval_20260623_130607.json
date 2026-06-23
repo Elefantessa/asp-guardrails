@@ -1,0 +1,1063 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-23T13:06:07.296769+00:00",
+  "baselines": [
+    "A",
+    "B",
+    "C"
+  ],
+  "total_cases": 20,
+  "metrics": {
+    "A": {
+      "total_cases": 20,
+      "correct": 4,
+      "hallucinations": 5,
+      "evasions": 11,
+      "errors": 0,
+      "hallucination_rate": 0.25,
+      "evasion_rate": 0.55,
+      "accuracy": 0.2,
+      "false_approval_rate": 0.8,
+      "detection_rate": 0.0,
+      "caught": 0,
+      "missed": 16,
+      "over_escalated": 0
+    },
+    "B": {
+      "total_cases": 20,
+      "correct": 18,
+      "hallucinations": 0,
+      "evasions": 2,
+      "errors": 0,
+      "hallucination_rate": 0.0,
+      "evasion_rate": 0.1,
+      "accuracy": 0.9,
+      "false_approval_rate": 0.1,
+      "detection_rate": 0.0,
+      "caught": 0,
+      "missed": 2,
+      "over_escalated": 0
+    },
+    "C": {
+      "total_cases": 20,
+      "correct": 17,
+      "hallucinations": 0,
+      "evasions": 3,
+      "errors": 0,
+      "hallucination_rate": 0.0,
+      "evasion_rate": 0.15,
+      "accuracy": 0.85,
+      "false_approval_rate": 0.1,
+      "detection_rate": 0.3333,
+      "caught": 1,
+      "missed": 2,
+      "over_escalated": 1
+    }
+  },
+  "results": [
+    {
+      "id": "HT001",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 65 days \u2014 boundary-sensitive (LLMs often say 50%)",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 65 days before departure?",
+      "gold_value": 30,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy bracket 63-69 days = 30%. LLMs commonly say 50% or 30-50% for this range.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, for cancellations made **between 63-42 days before departure**, the cancellation fee is typically **50% of the total holiday cost**.\n\nHowever, I want to be transparent with you - **cancellation fee structures can vary** depending on:\n\n- The specific holiday type (package holiday, flight-only, hotel-only, etc.)\n- The specific booking terms at the time of purchase\n- Any special promotions or fare types\n\nI'd strongly recommend:\n1. **Checking your booking confirmation** for the specific terms that apply to your booking\n2. **Visiting the TUI website** for their current cancellation policy\n3. **Contacting TUI directly** on their customer service line for confirmation\n\nThis ensures you have the most accurate and up-to-date information specific to **your** booking. \ud83d\ude0a",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5077,
+          "extract_latency_ms": 2098,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 65 days before departure, this falls within the **70 days or more** bracket. In this case, the cancellation fee is the **loss of your deposit** \u2014 meaning you will forfeit the deposit you paid, rather than a percentage of the total holiday price.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 65)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)\n\n> **Note:** The policy specifies \"loss of deposit\" for cancellations made 70 days or more before departure, rather than a specific percentage. The 0% figure above reflects that no additional percentage of the total holiday price is charged beyond the deposit itself.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5670,
+          "extract_latency_ms": 1668,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 65 days before departure, this falls within the **70 days or more** bracket in our cancellation fee schedule. This means you would forfeit your **deposit** \u2014 the termination fee is the **loss of deposit** rather than a percentage of the total holiday price.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 65)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)",
+          "decision": "escalated",
+          "extracted_claim": "not_stated",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "caught",
+          "latency_ms": 5601,
+          "extract_latency_ms": 1770,
+          "violations": [
+            "cancellation_claim_incorrect(\"c1\",\"b1\",0,\"Incorrect cancellation fee\")"
+          ]
+        }
+      }
+    },
+    {
+      "id": "HT002",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 50 days \u2014 mid bracket",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 50 days before departure?",
+      "gold_value": 50,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy bracket 49-62 days = 50%. Correct but LLMs may say 30% or 70%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, for cancellations made **between 43-56 days before departure**, the cancellation fee is typically **30% of the total holiday cost**.\n\nHowever, I want to be transparent with you:\n\n- **Cancellation fee structures can change**, and specific terms may vary depending on your booking type, destination, or any updates TUI has made to their policy.\n- **I'd strongly recommend verifying this directly with TUI** by:\n  - Checking your **booking confirmation documents**\n  - Visiting the **TUI website**\n  - Calling **TUI customer services**\n\nThis ensures you have the most accurate and up-to-date information for your specific booking before making any decisions.",
+          "decision": "approved",
+          "extracted_claim": "30",
+          "gold_value": 50,
+          "gold_unit": "percent",
+          "verdict": "hallucination",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 4480,
+          "extract_latency_ms": 1610,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 50 days before departure, this falls within the **62\u201349 days** bracket in our cancellation fee schedule. The termination fee you would be charged is **50% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 50)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 50)",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 50,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3390,
+          "extract_latency_ms": 1605,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 50 days before departure, this falls within the **62\u201349 days** bracket in our cancellation fee schedule. The termination fee you would be charged is **50% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 50)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 50)",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 50,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5230,
+          "extract_latency_ms": 1444,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT003",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 30 days \u2014 boundary-sensitive (29-48 = 70%)",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 30 days before departure?",
+      "gold_value": 70,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy bracket 29-48 days = 70%. LLMs often say 50% or 100%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, cancellation fees typically **increase the closer you get to the departure date**. For a cancellation around **30 days before departure**, the fee is commonly in the range of **50-70% of the total holiday cost**, but the exact percentage can vary depending on:\n\n- The **specific holiday package** booked\n- The **type of booking** (flight-inclusive, hotel only, etc.)\n- Any **specific terms** attached to your booking\n\n\u26a0\ufe0f **Important:** I want to be transparent that I may not have the most current or precise TUI fee schedule, and policies can change. I would strongly recommend:\n\n1. **Checking your booking confirmation** for the specific terms\n2. **Visiting TUI's official website** for their up-to-date cancellation policy\n3. **Contacting TUI directly** on their customer service line for an accurate figure specific to your booking\n\nWould you like help with anything else regarding your booking?",
+          "decision": "approved",
+          "extracted_claim": "50-70",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "hallucination",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5339,
+          "extract_latency_ms": 1840,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 30 days before departure, this falls within the **48 \u2013 29 days** bracket in the cancellation fee table. The termination fee for this period is **70% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 30)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 70)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4911,
+          "extract_latency_ms": 1540,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 30 days before departure, this falls within the **48 \u2013 29 days** bracket in the cancellation fee table. The termination fee for this period is **70% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 30)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 70)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4370,
+          "extract_latency_ms": 2077,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT004",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 20 days \u2014 15-28 day bracket = 90%",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 20 days before departure?",
+      "gold_value": 90,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy bracket 15-28 days = 90%. LLMs often say 100%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, cancellations made **20 days before departure** typically fall within a high-penalty bracket. However, I want to be transparent with you:\n\n**I don't have access to TUI's current, specific cancellation fee schedule** to give you a precise percentage with confidence, as these policies can vary depending on:\n\n- The **type of holiday** (package, flight-only, hotel-only)\n- The **specific booking terms** at the time of purchase\n- **Promotional or sale bookings** which may have different conditions\n\n## What I'd recommend:\n\n1. **Check your booking confirmation** \u2013 the cancellation terms specific to your booking should be outlined there\n2. **Visit TUI's official website** \u2013 they publish their standard cancellation fee tables\n3. **Contact TUI directly** \u2013 call or use their live chat for an accurate figure for your specific booking\n\nThis is important to verify directly, as cancellation fees at short notice (like 20 days) can be **significant**, potentially up to 100% of the holiday cost in some cases.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 6619,
+          "extract_latency_ms": 1846,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 20 days before departure, this falls within the **28\u201315 days** bracket. The cancellation fee is **90%** of the total price of your holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 20)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 2335,
+          "extract_latency_ms": 1548,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 20 days before departure, this falls within the **28\u201315 days** bracket. The cancellation fee is **90%** of the total price of your holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 20)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4102,
+          "extract_latency_ms": 1625,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT005",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 10 days \u2014 \u226414 days = 100%",
+      "query": "What is the cancellation fee percentage if I cancel my TUI holiday booking 10 days before departure?",
+      "gold_value": 100,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy: \u226414 days = 100%. This is usually correct but worth testing.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, cancellations made **within 14 days of departure** typically incur a **100% cancellation fee** (i.e., no refund).\n\nHowever, I want to be transparent: **cancellation fee structures can vary** depending on:\n- The specific holiday package type\n- Your booking terms and conditions\n- Whether you booked directly with TUI or through a third party\n- Any travel insurance you may have\n\n**I'd strongly recommend:**\n1. Checking your **booking confirmation documents** for the specific terms that apply to your booking\n2. Contacting **TUI directly** (via their website or customer service) for the most accurate and up-to-date information\n\nThis is important because policies can change, and the exact fees for your specific booking may differ from general guidelines.",
+          "decision": "approved",
+          "extracted_claim": "100",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5180,
+          "extract_latency_ms": 1841,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 10 days before departure, you fall within the **14 - 0 days** bracket in the cancellation fee schedule. This means you will be charged **100%** of the total price of your holiday as the termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 10)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 100)",
+          "decision": "approved",
+          "extracted_claim": "100",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3478,
+          "extract_latency_ms": 4126,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 10 days before departure, you fall within the **14 - 0 days** bracket in the cancellation fee schedule. This means you will be charged **100%** of the total price of your holiday as the termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 10)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 100)",
+          "decision": "approved",
+          "extracted_claim": "100",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4697,
+          "extract_latency_ms": 2749,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT006",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 80 days \u2014 \u226570 days = 0% (deposit forfeited only)",
+      "query": "What is the cancellation fee if I cancel my TUI holiday booking 80 days before departure?",
+      "gold_value": 0,
+      "gold_unit": "percent",
+      "hallucination_note": "Policy: \u226570 days = 0% cancellation fee (deposit loss only). LLMs may say 10-20%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on TUI's standard cancellation policy, if you cancel **80 days before departure**, you would typically fall into a cancellation band where you lose your **deposit only** (as this is usually more than 70 days before departure).\n\nHowever, TUI's cancellation charges are generally structured as follows (for standard packages):\n\n| Days Before Departure | Cancellation Charge |\n|----------------------|---------------------|\n| 70+ days | Loss of deposit |\n| 43\u201370 days | 30% of holiday cost |\n| 29\u201342 days | 50% of holiday cost |\n| 15\u201328 days | 70% of holiday cost |\n| 0\u201314 days | 100% of holiday cost |\n\nSo at **80 days**, you would likely only lose your **deposit**.\n\n\u26a0\ufe0f **Important caveats:**\n- These figures are indicative and **may have changed**\n- Terms can vary depending on your **specific booking type** (e.g., flight-only, cruise, or specific hotel)\n- I'd strongly recommend **checking your booking confirmation** or contacting **TUI directly** to confirm the exact charges applicable to your booking\n\nWould you like help with anything else?",
+          "decision": "approved",
+          "extracted_claim": "0",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 8723,
+          "extract_latency_ms": 1316,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 80 days or more before departure, the cancellation fee is the **loss of deposit**. This means you will forfeit the deposit you paid when booking, but you will not be charged a percentage of the total holiday price beyond that.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 80)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)\n\n> **Note:** The policy specifies \"loss of deposit\" for cancellations 70 days or more before departure, rather than a specific percentage. The 0% figure above reflects that no additional percentage of the total holiday price is charged beyond the deposit itself.",
+          "decision": "approved",
+          "extracted_claim": "0",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4964,
+          "extract_latency_ms": 1841,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 80 days or more before departure, the cancellation fee is the **loss of deposit**. This means you will forfeit the deposit you paid when booking, but you will not be charged a percentage of the total holiday price beyond that.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 80)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)\n\n> **Note:** The policy specifies \"loss of deposit\" for cancellations 70 days or more before departure, rather than a specific percentage. The 0% figure above reflects that no additional percentage of the total holiday price is charged beyond the deposit itself.",
+          "decision": "approved",
+          "extracted_claim": "0",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 7691,
+          "extract_latency_ms": 1839,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT007",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 70 days = 0%",
+      "query": "What is the cancellation fee if I cancel exactly 70 days before my TUI holiday?",
+      "gold_value": 0,
+      "gold_unit": "percent",
+      "hallucination_note": "Boundary: 70 days is still \u226570 so = 0%. 69 days = 30%. Classic off-by-one for LLMs.",
+      "baselines": {
+        "A": {
+          "answer": "Based on TUI's standard cancellation policy, **70 days before departure** typically falls within the bracket where you would lose your **deposit only** (rather than a percentage of the full holiday cost).\n\nHowever, I want to be transparent \u2014 TUI's exact cancellation fee brackets and percentages **can vary depending on the specific holiday type** (e.g., package holidays, cruises, or certain promotional bookings), and these policies can also change over time.\n\n**I'd recommend:**\n- Checking your **booking confirmation** or **booking terms and conditions**, which will state the exact cancellation charges applicable to your specific holiday\n- Contacting **TUI directly** at their customer service line or via their website for the most accurate and up-to-date information\n\nThis ensures you get the precise figure for your booking rather than a general estimate.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5972,
+          "extract_latency_ms": 1200,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday exactly 70 days before departure, you fall into the \"70 days or more\" bracket. In this case, the cancellation fee is the **loss of your deposit** \u2014 meaning you will forfeit the deposit you paid, but you will not be charged a higher percentage of the total holiday price.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 70)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 3380,
+          "extract_latency_ms": 1536,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday exactly 70 days before departure, you fall into the \"70 days or more\" bracket. In this case, the cancellation fee is the **loss of your deposit** \u2014 meaning you will forfeit the deposit you paid, but you will not be charged a percentage of the total holiday price beyond that.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 70)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 0,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5115,
+          "extract_latency_ms": 1647,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT008",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 63 days = 30%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 63 days before my TUI holiday departure?",
+      "gold_value": 30,
+      "gold_unit": "percent",
+      "hallucination_note": "Exact lower boundary of 30% bracket. LLMs likely to say 50%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on standard TUI cancellation policy, **63 days before departure** typically falls within the bracket where a **deposit/initial payment is forfeited** (cancellations made more than 56-63 days before departure often result in loss of deposit only).\n\nHowever, I want to be straightforward with you - **I'm not fully confident in the exact percentage or bracket for precisely 63 days**, as TUI's cancellation fee structure can vary depending on:\n\n- The specific holiday type (package, cruise, flight-only, etc.)\n- When you booked\n- Any insurance or protection you may have purchased\n\nI'd strongly recommend:\n1. **Checking your booking confirmation**, which should outline the specific cancellation terms\n2. **Visiting TUI's official website** for their current cancellation policy\n3. **Contacting TUI directly** on their customer service line for a precise answer\n\nThis ensures you get the most accurate and up-to-date information for your specific booking.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 6387,
+          "extract_latency_ms": 1225,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday exactly 63 days before departure, you fall within the **69\u201363 days** bracket in the cancellation fee table.\n\nAt this point, the termination fee is **30% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 63)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 30)",
+          "decision": "approved",
+          "extracted_claim": "30",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3344,
+          "extract_latency_ms": 1576,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday exactly 63 days before departure, you fall within the **69\u201363 days** bracket in the cancellation fee table.\n\nAt this point, the termination fee is **30% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 63)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 30)",
+          "decision": "approved",
+          "extracted_claim": "30",
+          "gold_value": 30,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4160,
+          "extract_latency_ms": 1671,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT009",
+      "category": "cancellation_fees",
+      "description": "Exact boundary: 14 days = 100%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 14 days before my TUI holiday departure?",
+      "gold_value": 100,
+      "gold_unit": "percent",
+      "hallucination_note": "Exact upper boundary of 100% bracket (Days < 15 = 100%).",
+      "baselines": {
+        "A": {
+          "answer": "Based on standard TUI cancellation policy, cancelling **14 days before departure** typically falls into a high-penalty bracket, often around **90-100% of the total holiday cost**, as this is considered very short notice.\n\nHowever, I want to be straightforward with you: **cancellation fee structures can vary** depending on:\n\n- The specific holiday type (package holiday, flight-only, hotel-only, etc.)\n- Your booking terms and conditions\n- Any insurance you may have purchased\n\nI'd recommend:\n1. **Checking your booking confirmation** for the specific cancellation terms that apply to your booking\n2. **Visiting the TUI website** directly for their current policy\n3. **Calling TUI customer services** for precise figures related to your specific booking\n\nThis ensures you get the most accurate and up-to-date information rather than relying on general figures that may not apply to your situation.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5794,
+          "extract_latency_ms": 1535,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday exactly 14 days before departure, you fall within the **14 - 0 days** bracket in the cancellation fee table. This means you will be charged **100%** of the total price of your holiday as the termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 14)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 100)",
+          "decision": "approved",
+          "extracted_claim": "100",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 2864,
+          "extract_latency_ms": 1565,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday exactly 14 days before departure, you fall within the **14 - 0 days** bracket in the cancellation fee table. This means you will be charged **100%** of the total price of your holiday as the termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 14)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 100)",
+          "decision": "approved",
+          "extracted_claim": "100",
+          "gold_value": 100,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4481,
+          "extract_latency_ms": 1314,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT010",
+      "category": "amendment_fees",
+      "description": "Name change fee = \u00a325",
+      "query": "How much does it cost to change the lead name on a TUI holiday booking?",
+      "gold_value": 25,
+      "gold_unit": "GBP",
+      "hallucination_note": "Policy: \u00a325 name change fee. LLMs commonly say \u00a330, \u00a350, or \u00a375.",
+      "baselines": {
+        "A": {
+          "answer": "Based on my knowledge, TUI typically charges a fee for changing the **lead name** on a booking, and this is generally treated as a **transfer of the booking** rather than a simple name change. This can be quite costly and may be subject to supplier/airline fees on top of any TUI administration charges.\n\nHowever, I don't have the exact current fee figures to hand, and these can vary depending on:\n- How close to departure the change is made\n- The specific holiday/airline involved\n- Current TUI policy updates\n\nI'd recommend:\n- Checking the **TUI website** directly for their latest booking conditions\n- Calling **TUI Customer Services** for an accurate quote specific to your booking\n\nThis will ensure you get the most up-to-date and accurate cost for your situation.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 25,
+          "gold_unit": "GBP",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 6600,
+          "extract_latency_ms": 1417,
+          "violations": []
+        },
+        "B": {
+          "answer": "The cost to change the lead name (or any passenger name) on a TUI holiday booking is **\u00a325 per person**, regardless of how far in advance the change is made. This fee applies whether you are 29 or more days before departure, 28\u201315 days before departure, or 14\u20130 days before departure.\n\nPlease note that if you are simply **correcting a spelling error**, no fee is charged.\n\nAlso bear in mind that if the airline or transport provider charges their own fee for a name change, you would need to pay that fee **in addition** to TUI's \u00a325 amendment fee, and airline fees can be up to 100% of the price of that part of your holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"name_change\", 2500)",
+          "decision": "approved",
+          "extracted_claim": "25",
+          "gold_value": 25,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4609,
+          "extract_latency_ms": 1538,
+          "violations": []
+        },
+        "C": {
+          "answer": "The cost to change a name, passenger, or passenger type on a TUI holiday booking is **\u00a325 per person**, regardless of how far in advance of departure you make the change. This fee applies whether you are 29 or more days before departure, 28\u201315 days before departure, or 14\u20130 days before departure. Note that if you are simply correcting a spelling error, no fee is charged.\n\nPlease also be aware that if the new holiday arrangements are more expensive than your original booking, you will need to pay the difference in price rather than the amendment fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"name_change\", 2500)",
+          "decision": "approved",
+          "extracted_claim": "25",
+          "gold_value": 25,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 7175,
+          "extract_latency_ms": 2342,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT011",
+      "category": "amendment_fees",
+      "description": "Duration change fee = \u00a350",
+      "query": "What is the fee for changing the duration of my TUI holiday booking?",
+      "gold_value": 50,
+      "gold_unit": "GBP",
+      "hallucination_note": "Policy: \u00a350 (5000 pence in ASP). LLMs may say \u00a325, \u00a375, or \u00a3100.",
+      "baselines": {
+        "A": {
+          "answer": "Based on my knowledge of TUI's booking policies, **amendment fees typically apply** when changing the duration of a holiday booking, but the **exact fee can vary** depending on:\n\n- **When you make the change** (how far in advance of your departure date)\n- **The type of booking** (package holiday, flight-only, hotel-only, etc.)\n- **The specific fare type** purchased\n\nGenerally, TUI charges an **administration fee per person** for amendments, which has historically been around **\u00a335 per person**, but this can change.\n\nI'd recommend:\n1. **Checking your original booking confirmation** for specific terms\n2. **Visiting the TUI website** (tui.co.uk) for the most up-to-date fee schedule\n3. **Contacting TUI directly** on **0203 451 2688** for accurate, personalised information\n\nI want to be transparent that fees and policies can be updated, so please verify the current charges directly with TUI before making any decisions.",
+          "decision": "approved",
+          "extracted_claim": "35",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "hallucination",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 6185,
+          "extract_latency_ms": 2146,
+          "violations": []
+        },
+        "B": {
+          "answer": "The fee for changing the duration of your TUI holiday booking is **\u00a350 per person**. This fee applies regardless of when you make the change \u2014 whether it is 29 or more days before departure, 28\u201315 days before departure, or 14\u20130 days before departure. The \u00a350 per person fee remains the same across all time periods.\n\nPlease note that when making this change, the price of your new travel arrangements will be based on the price that applies on the day you make the change, and there will be no reduction in price even if your new arrangements are cheaper than your original booking. However, if the new holiday is more expensive, you will not need to pay the amendment fee \u2014 instead you will pay the difference in price.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"change_duration\", 5000)",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4608,
+          "extract_latency_ms": 1129,
+          "violations": []
+        },
+        "C": {
+          "answer": "I'd be happy to help with amendment fees for changing the duration of your holiday, but I need a little more information to give you the exact fee.\n\nCould you please tell me how many days before your departure you are looking to make this change?",
+          "decision": "pending_info",
+          "extracted_claim": "not_stated",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 3477,
+          "extract_latency_ms": 1535,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT012",
+      "category": "amendment_fees",
+      "description": "Service upgrade fee = \u00a30 (free)",
+      "query": "Is there a fee to upgrade my service level on a TUI holiday booking?",
+      "gold_value": 0,
+      "gold_unit": "GBP",
+      "hallucination_note": "Policy: upgrade_service fee = \u00a30. LLMs likely to invent a fee (e.g. \u00a325-50).",
+      "baselines": {
+        "A": {
+          "answer": "I don't have specific details about TUI's current fee structure for upgrading service levels on holiday bookings. This can vary depending on:\n\n- The **type of holiday** (package, cruise, etc.)\n- **When** you request the upgrade\n- **Availability** at the time of request\n\nI'd recommend:\n1. **Checking TUI's official website** (tui.co.uk or your regional TUI site)\n2. **Contacting TUI directly** via their customer service line or live chat\n3. **Reviewing your booking confirmation** for terms related to changes\n\nThey'll be able to give you accurate, up-to-date pricing for any upgrades specific to your booking.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 0,
+          "gold_unit": "GBP",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 3820,
+          "extract_latency_ms": 2872,
+          "violations": []
+        },
+        "B": {
+          "answer": "There is no amendment fee charged by TUI to upgrade a service, add on a flight extra, upgrade a room type, or upgrade your board basis. This applies regardless of how many days before departure you make the change \u2014 whether that is 29 or more days, 28\u201315 days, or 14\u20130 days before your holiday. The upgrade is free of any TUI amendment fee at any point.\n\nPlease note, however, that if an airline or other transport provider is involved in the upgrade, they may charge their own separate fee, which you would also need to pay. Additionally, the price of your new arrangements will be based on the price applicable on the day you make the change, and no reduction will be given if the new arrangements happen to be cheaper than your original booking.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"upgrade_service\", 0)",
+          "decision": "approved",
+          "extracted_claim": "0",
+          "gold_value": 0,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5226,
+          "extract_latency_ms": 1237,
+          "violations": []
+        },
+        "C": {
+          "answer": "There is no amendment fee charged by TUI to upgrade a service, add on a flight extra, upgrade a room type, or upgrade your board basis. This applies regardless of how far in advance of your departure you make the change \u2014 whether that is 29 or more days before, 28 to 15 days before, or 14 to 0 days before departure.\n\nPlease note, however, that if the upgraded service results in a higher holiday price, you will need to pay the difference in price between your original and new arrangements. Also bear in mind that the new price will be based on the price that applies on the day you make the change, and there will be no reduction even if the new arrangements happen to be cheaper.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"upgrade_service\", 0)",
+          "decision": "approved",
+          "extracted_claim": "0",
+          "gold_value": 0,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 7300,
+          "extract_latency_ms": 1191,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT013",
+      "category": "complaint_time_limits",
+      "description": "Complaint window = 28 days after return",
+      "query": "How many days after returning from a TUI holiday do I have to submit a formal complaint?",
+      "gold_value": 28,
+      "gold_unit": "days",
+      "hallucination_note": "Policy: 28 days. LLMs commonly say 14, 30, or 60 days.",
+      "baselines": {
+        "A": {
+          "answer": "Based on TUI's complaints policy, you have **28 days** after returning from your holiday to submit a formal complaint.\n\nHowever, I'd recommend checking the current TUI website or contacting TUI directly to confirm this, as policies can change and I want to make sure you have the most up-to-date information.",
+          "decision": "approved",
+          "extracted_claim": "28",
+          "gold_value": 28,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 2259,
+          "extract_latency_ms": 1352,
+          "violations": []
+        },
+        "B": {
+          "answer": "You have **28 days** after returning home to contact After-Travel Customer Support with a formal complaint. This allows TUI to investigate the issue properly. Note that if you experienced a problem during your holiday, you should also report it to the relevant supplier (e.g. the hotel) and a TUI representative at the time, or contact the TUI Experience Centre (open 24/7) if a representative is unavailable.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: complaint_filed_days(\"c1\", \"b1\", 28)",
+          "decision": "approved",
+          "extracted_claim": "28",
+          "gold_value": 28,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3408,
+          "extract_latency_ms": 1157,
+          "violations": []
+        },
+        "C": {
+          "answer": "You have **28 days** after returning home to contact After-Travel Customer Support with a formal complaint. This allows TUI to investigate the issue properly. Note that if you experienced a problem during your holiday, you should also report it to the relevant supplier (e.g. the hotel) and a TUI representative at the time, or contact the TUI Experience Centre (open 24/7) if a representative is unavailable.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: complaint_filed_days(\"c1\", \"b1\", 28)",
+          "decision": "approved",
+          "extracted_claim": "28",
+          "gold_value": 28,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5808,
+          "extract_latency_ms": 1588,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT014",
+      "category": "injury_claim_limits",
+      "description": "Injury claim window = 90 days after incident",
+      "query": "How many days after an injury incident do I have to make a claim with TUI?",
+      "gold_value": 90,
+      "gold_unit": "days",
+      "hallucination_note": "Policy: 90 days. LLMs often say 30, 60, or 180 days.",
+      "baselines": {
+        "A": {
+          "answer": "I don't have specific information about TUI's claims timeframe following an injury incident. \n\nI'd recommend:\n- **Checking your booking documentation** or travel insurance policy for specific claim deadlines\n- **Contacting TUI directly** via their customer service team, who can give you the accurate and up-to-date timeframe\n- **Visiting the TUI website** for their official claims process guidance\n\nIt's important to get the correct information promptly, as missing a deadline could affect your claim.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 90,
+          "gold_unit": "days",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 3461,
+          "extract_latency_ms": 1542,
+          "violations": []
+        },
+        "B": {
+          "answer": "You have up to 3 months after returning home to contact After-Travel Customer Support regarding a personal injury claim. It is important that you also report the injury to both TUI and the supplier involved at the time of the incident, and complete a report while still on holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: injury_claim_filed_days(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 2759,
+          "extract_latency_ms": 1534,
+          "violations": []
+        },
+        "C": {
+          "answer": "You must report any injury claim to After-Travel Customer Support no more than **3 months** after you return home. It is important that you also report the injury to TUI and the supplier involved at the time of the incident, and complete a report while still on holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: injury_claim_filed_days(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5850,
+          "extract_latency_ms": 1836,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT015",
+      "category": "payment_requirements",
+      "description": "Full payment deadline = 84 days before departure",
+      "query": "How many days before departure must I have paid the full balance for my TUI holiday?",
+      "gold_value": 84,
+      "gold_unit": "days",
+      "hallucination_note": "Policy: 84 days. LLMs commonly say 56 days (8 weeks), 90 days, or 60 days.",
+      "baselines": {
+        "A": {
+          "answer": "Based on TUI's general policy, the **full balance is typically due 28 days before departure** for most TUI holidays.\n\nHowever, I'd recommend confirming this directly with TUI or checking your booking confirmation, as the exact deadline can vary depending on the specific holiday package or any updates to their terms and conditions. You can visit **tui.co.uk** or contact TUI customer services for the most accurate and up-to-date information.",
+          "decision": "approved",
+          "extracted_claim": "28",
+          "gold_value": 84,
+          "gold_unit": "days",
+          "verdict": "hallucination",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 4287,
+          "extract_latency_ms": 2103,
+          "violations": []
+        },
+        "B": {
+          "answer": "You must pay the full balance of your holiday at least **12 weeks** (84 days) before your departure date. If you have booked within 12 weeks of your holiday, you must pay in full at the time of booking. If you fail to pay the full balance by this deadline, TUI can cancel your holiday and charge you a termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 84)\nCLAIM: llm_approves_booking(\"c1\", \"b1\")",
+          "decision": "approved",
+          "extracted_claim": "84",
+          "gold_value": 84,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3228,
+          "extract_latency_ms": 1994,
+          "violations": []
+        },
+        "C": {
+          "answer": "You must pay the full balance for your TUI holiday at least **12 weeks** (84 days) before your departure date. If you book within 12 weeks of your holiday, you will be required to pay in full at the time of booking rather than just a deposit. If you fail to pay the full balance by this deadline, TUI can cancel your holiday and charge you a termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 84)\nCLAIM: llm_approves_booking(\"c1\", \"b1\")",
+          "decision": "escalated",
+          "extracted_claim": "84",
+          "gold_value": 84,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "over_escalated",
+          "latency_ms": 6465,
+          "extract_latency_ms": 1521,
+          "violations": [
+            "answer_invalid(\"c1\",\"b1\",\"LLM approved invalid booking\")"
+          ]
+        }
+      }
+    },
+    {
+      "id": "HT016",
+      "category": "identity_validation",
+      "description": "Minimum lead booker age = 18",
+      "query": "What is the minimum age to be the lead name on a TUI holiday booking?",
+      "gold_value": 18,
+      "gold_unit": "years",
+      "hallucination_note": "Policy: 18. This is standard \u2014 LLMs usually get it right. Included as control.",
+      "baselines": {
+        "A": {
+          "answer": "To be the lead name on a TUI holiday booking, you must be at least **18 years of age**.",
+          "decision": "approved",
+          "extracted_claim": "18",
+          "gold_value": 18,
+          "gold_unit": "years",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 1317,
+          "extract_latency_ms": 2331,
+          "violations": []
+        },
+        "B": {
+          "answer": "You must be an adult (aged 18 or over) to be the lead name on a TUI holiday booking. The policy states that you must be an adult when you book, and anyone aged under 18 must be accompanied by an adult while on holiday.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: age(\"c1\", 18)\nCLAIM: llm_approves_booking(\"c1\", \"b1\")",
+          "decision": "approved",
+          "extracted_claim": "18",
+          "gold_value": 18,
+          "gold_unit": "years",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3998,
+          "extract_latency_ms": 1525,
+          "violations": []
+        },
+        "C": {
+          "answer": "You must be an adult (aged 18 or over) to be the lead name on a booking. The policy states that when you book your holiday, you must be an adult, and anyone aged under 18 on the holiday must be accompanied by an adult. This means the lead name must be at least 18 years old at the time of booking.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: age(\"c1\", 18)\nCLAIM: llm_approves_booking(\"c1\", \"b1\")",
+          "decision": "approved",
+          "extracted_claim": "18",
+          "gold_value": 18,
+          "gold_unit": "years",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 6762,
+          "extract_latency_ms": 1374,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT017",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 45 days \u2014 boundary 29-48 = 70%",
+      "query": "What percentage of my holiday cost would I lose if I cancel 45 days before departure?",
+      "gold_value": 70,
+      "gold_unit": "percent",
+      "hallucination_note": "Upper end of 29-48 bracket = 70%. LLMs may say 50%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on TUI's standard cancellation charges, if you cancel **45 days before departure**, you would typically lose around **50% of the total holiday cost**.\n\nHowever, I'd recommend **verifying this directly with TUI**, as:\n- Cancellation policies can vary depending on the specific package or booking terms\n- Policies may have been updated\n- Your specific booking conditions may differ\n\nYou can check your booking confirmation or contact TUI directly at **0203 451 2688** or via their website for the most accurate and up-to-date information for your specific booking.",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "hallucination",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 3838,
+          "extract_latency_ms": 1612,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday 45 days before departure, you fall into the **48\u201329 days** bracket in our cancellation fee schedule. This means you would lose **70%** of the total price of your holiday as a termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 45)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 70)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3249,
+          "extract_latency_ms": 1419,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday 45 days before departure, you fall into the **48\u201329 days** bracket in our cancellation fee schedule. This means you would lose **70%** of the total price of your holiday as a termination fee.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 45)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 70)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 6276,
+          "extract_latency_ms": 1519,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT018",
+      "category": "cancellation_fees",
+      "description": "Cancellation fee at 15 days \u2014 boundary 15-28 = 90%",
+      "query": "What is the cancellation fee percentage if I cancel exactly 15 days before my TUI holiday?",
+      "gold_value": 90,
+      "gold_unit": "percent",
+      "hallucination_note": "Exact lower boundary of 90% bracket. LLMs likely to say 100%.",
+      "baselines": {
+        "A": {
+          "answer": "Based on standard TUI cancellation policy, cancellations made **15 days before departure** typically fall into a high-penalty bracket, often around **90-100% of the holiday cost**, as this is considered very short notice.\n\nHowever, I want to be transparent: **cancellation fee structures can vary** depending on:\n- The specific holiday type (package, flight-only, hotel-only)\n- The booking terms at the time of purchase\n- Any insurance or flexible booking options you added\n\nI'd strongly recommend:\n1. **Checking your booking confirmation** for the specific terms that apply to your booking\n2. **Contacting TUI directly** at their customer service line or website for the exact figure applicable to your situation\n\nWould you like guidance on anything else, such as travel insurance options or how to make changes rather than cancel?",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 5853,
+          "extract_latency_ms": 1471,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you cancel your holiday exactly 15 days before departure, you fall within the **28\u201315 days** bracket in the cancellation fee table.\n\nThe termination fee for this bracket is **90% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 15)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 3079,
+          "extract_latency_ms": 2142,
+          "violations": []
+        },
+        "C": {
+          "answer": "If you cancel your holiday exactly 15 days before departure, you fall within the **28\u201315 days** bracket in the cancellation fee table.\n\nThe termination fee for this bracket is **90% of the total price of your holiday**.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 15)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 90)",
+          "decision": "approved",
+          "extracted_claim": "90",
+          "gold_value": 90,
+          "gold_unit": "percent",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4617,
+          "extract_latency_ms": 1521,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT019",
+      "category": "amendment_fees",
+      "description": "Accommodation change fee = \u00a350 (if \u226529 days before departure)",
+      "query": "How much does it cost to change the accommodation on a TUI holiday booking if departing in 60 days?",
+      "gold_value": 50,
+      "gold_unit": "GBP",
+      "hallucination_note": "Policy: \u00a350 if \u226529 days. LLMs may say \u00a325 or \u00a375.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI policy, amendment fees typically apply when making changes to a booking, and these can vary depending on **how close to departure** the change is made.\n\nHowever, I **don't have the specific current fee** for changing accommodation on a booking departing in 60 days, as TUI's amendment charges can vary based on:\n\n- The type of holiday package\n- The specific accommodation change requested\n- Current TUI pricing policies\n\nI'd recommend:\n- **Checking TUI's website** for their current amendment fee schedule\n- **Calling TUI directly** on their customer service line\n- **Reviewing your booking confirmation** which may outline applicable change fees\n\nThis will ensure you get the most accurate and up-to-date information for your specific booking.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 4566,
+          "extract_latency_ms": 1139,
+          "violations": []
+        },
+        "B": {
+          "answer": "If you want to change your accommodation on a TUI holiday booking and your departure is 60 days away, this falls within the **29+ days** bracket, which means the change is permitted with an amendment fee.\n\nThe fee to change accommodation when departing in 29 or more days is **\u00a350 per person**. Please note that the price of your new travel arrangements will be based on the price that applies on the day you make the change, and there will be no reduction even if the new accommodation is cheaper than your original booking.\n\nHowever, please be aware that if you were to make this same change within 28 days of departure, it would be **treated as a cancellation** rather than an amendment.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 60)\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"change_accommodation\", 5000)",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 4692,
+          "extract_latency_ms": 1855,
+          "violations": []
+        },
+        "C": {
+          "answer": "Changing your accommodation when you are 60 days away from departure falls within the **29+ days** bracket, which means the change is permitted as a standard amendment rather than being treated as a cancellation.\n\nThe fee for changing accommodation (or departure/destination airport, or a flight not operated by TUI) when 29 or more days before departure is **\u00a350 per person**.\n\nPlease also bear in mind that the price of your new travel arrangements will be based on the price that applies on the day you make the change, and there will be no reduction even if the new accommodation is cheaper than your original booking. Additionally, if the airline or another transport provider is involved in the change, they may charge their own fees on top of this amendment fee, potentially up to 100% of that part of your holiday cost.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 60)\nCLAIM: llm_claims_fee(\"c1\", \"b1\", \"change_accommodation\", 5000)",
+          "decision": "approved",
+          "extracted_claim": "50",
+          "gold_value": 50,
+          "gold_unit": "GBP",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 8602,
+          "extract_latency_ms": 2457,
+          "violations": []
+        }
+      }
+    },
+    {
+      "id": "HT020",
+      "category": "cancellation_fees",
+      "description": "Cancellation threshold for zero fee \u2014 must be >70 days",
+      "query": "How many days before departure do I need to cancel my TUI holiday to avoid a cancellation fee?",
+      "gold_value": 70,
+      "gold_unit": "days",
+      "hallucination_note": "Policy: \u226570 days = 0% fee. LLMs commonly say 56, 60, or 90 days.",
+      "baselines": {
+        "A": {
+          "answer": "Based on general TUI cancellation policy, the cancellation charges are typically structured on a sliding scale based on how far in advance you cancel before departure. However, **there is generally no period where you can cancel completely free of charge** once a booking is confirmed, as a deposit is usually non-refundable.\n\nThe typical TUI cancellation charge structure is roughly:\n\n- **More than 70 days** before departure \u2013 loss of deposit\n- **43\u201370 days** \u2013 around 30% of holiday cost\n- **29\u201342 days** \u2013 around 50%\n- **15\u201328 days** \u2013 around 70%\n- **0\u201314 days** \u2013 100% of holiday cost\n\n\u26a0\ufe0f However, I'd strongly recommend:\n1. **Checking your specific booking confirmation**, as charges can vary\n2. **Contacting TUI directly** or visiting **tui.co.uk** for the most up-to-date and accurate policy for your booking\n\nPolicies can also differ depending on the type of holiday (e.g., package holidays vs. flight-only bookings), so it's important to verify the exact terms that apply to you.",
+          "decision": "approved",
+          "extracted_claim": "not_stated",
+          "gold_value": 70,
+          "gold_unit": "days",
+          "verdict": "evasion",
+          "is_hallucination": true,
+          "detection_status": "missed",
+          "latency_ms": 6706,
+          "extract_latency_ms": 1536,
+          "violations": []
+        },
+        "B": {
+          "answer": "To avoid a cancellation fee entirely, you would need to cancel **70 days or more** before your holiday departure date. At this threshold, the charge is limited to the **loss of your deposit** rather than a percentage of the total holiday price. Unfortunately, there is no point at which you can cancel and receive a full refund \u2014 even cancelling 70 days or more in advance means you will forfeit your deposit.\n\nIf you cancel between 69 and 63 days before departure, the fee rises to 30% of your total holiday price, and it increases further the closer you get to your departure date, reaching 100% for cancellations made 14 to 0 days before departure.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 70)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 5243,
+          "extract_latency_ms": 2436,
+          "violations": []
+        },
+        "C": {
+          "answer": "To avoid a cancellation fee entirely, you would need to cancel **70 days or more** before your holiday departure date. At this threshold, the charge is limited to the **loss of your deposit** rather than a percentage of the total holiday price.\n\nPlease note that even at 70+ days, you will still lose your deposit \u2014 there is no point at which you can cancel and receive a full refund under the standard cancellation policy. The percentage-based fees begin at 69 days before departure (30% of the holiday price) and increase the closer you get to your departure date, reaching 100% within the final 14 days.\n\nCLAIM: booking(\"c1\", \"b1\")\nCLAIM: days_until_holiday(\"b1\", 70)\nCLAIM: llm_claims_cancellation_fee(\"c1\", \"b1\", 0)",
+          "decision": "approved",
+          "extracted_claim": "70",
+          "gold_value": 70,
+          "gold_unit": "days",
+          "verdict": "correct",
+          "is_hallucination": false,
+          "detection_status": "passed_correctly",
+          "latency_ms": 6023,
+          "extract_latency_ms": 2166,
+          "violations": []
+        }
+      }
+    }
+  ]
+}
