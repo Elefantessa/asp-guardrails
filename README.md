@@ -12,10 +12,10 @@ Company: cloudway
 
 | File | Description |
 |---|---|
-| [architecture.md](architecture.md) | System architecture, multi-agent graph, component design |
-| [evaluation_findings.md](evaluation_findings.md) | Baseline comparison results + failure analysis |
-| [api_reference.md](api_reference.md) | Module reference, state schema, public functions |
-| [deployment.md](deployment.md) | Setup, running the system, Docker, credentials |
+| [architecture.md](./documentation/architecture.md) | System architecture, multi-agent graph, component design |
+| [evaluation_findings.md](./documentation/evaluation_findings.md) | Baseline comparison results + failure analysis |
+| [api_reference.md](./documentation/api_reference.md) | Module reference, state schema, public functions |
+| [deployment.md](./documentation/deployment.md) | Setup, running the system, Docker, credentials |
 
 ---
 
