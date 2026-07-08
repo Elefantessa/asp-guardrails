@@ -4,8 +4,6 @@
 
 Hala Alramli, University of Antwerp, 2026
 
-Company: cloudway
-
 ---
 
 ## Documents
