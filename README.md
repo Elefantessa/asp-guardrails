@@ -1,4 +1,4 @@
-# Cloudway — Documentation Index
+# Documentation Index
 
 **Neuro-Symbolic Policy Compliance System**
 
@@ -21,7 +21,7 @@ Company: cloudway
 
 ## Quick Summary
 
-Cloudway eliminates undetected LLM hallucinations in corporate policy queries
+Eliminates undetected LLM hallucinations in corporate policy queries
 by combining RAG (retrieval) with ASP symbolic validation (Clingo).
 
 ```
